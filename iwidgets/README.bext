@@ -48,6 +48,13 @@ bwish and Archer where Tk was initialized first.  The patch uses the fully
 qualified ::iwidgets::Labeledwidget class name so both supported initialization
 orders behave identically.
 
+Panedwindow's frame hull shares its resource class name with Tk's native
+panedwindow widget, whose event bindings call a different widget API.  The
+patch removes that class tag from the hull's binding list while retaining
+Iwidgets' configure and sash bindings and the Panedwindow resource class.
+Pointer motion and clicks therefore use the correct handlers without
+changing native Tk panedwindow behavior.
+
 These changes are kept as a bext patch rather than modifications to the source
 submodule.  That keeps the imported upstream revision identifiable and makes
 the compatibility delta explicit and independently reviewable.  The external

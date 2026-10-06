@@ -223,6 +223,22 @@ index 032021e..4f94a4d 100755
  	    -relief sunken -borderwidth 2 -width 10
      }
  
+diff --git a/generic/panedwindow.itk b/generic/panedwindow.itk
+--- a/generic/panedwindow.itk
++++ b/generic/panedwindow.itk
+@@ -134,8 +134,11 @@
+     # Add binding for the configure event.
+     #
+     bind pw-config-$this <Configure> [itcl::code $this _pwConfigureEventHandler %w %h]
++    # Tk's native Panedwindow uses the same class name but a different API.
++    # Keep the hull's resource class and Iwidgets' own event bindings.
+     bindtags $itk_component(hull) \
+-	    [linsert [bindtags $itk_component(hull)] 0 pw-config-$this]
++	    [linsert [lsearch -all -inline -not -exact \
++		    [bindtags $itk_component(hull)] Panedwindow] 0 pw-config-$this]
+     
+     array set _relief {0 sunken 1 raised}
+ 
 diff --git a/generic/radiobox.itk b/generic/radiobox.itk
 index 282eaa7..fe1b11e 100755
 --- a/generic/radiobox.itk
