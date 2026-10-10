@@ -34,6 +34,10 @@ cmake --preset auto
 Use `LIST_ONLY=ON` to preview the selected submodules without fetching them,
 and `GIT_SHALLOW_CLONE=ON` to specify shallow clones during bootstrap.
 
+Both configure and bootstrap accept `BEXT_REPOSITORY_ROOT` to fetch from an
+alternate host or a local Git mirror.  See [alternate repositories and offline
+mirrors](INSTALL.md#alternate-repositories-and-offline-mirrors) for examples.
+
 # How manual selection works
 
 Build selection happens in three layers:

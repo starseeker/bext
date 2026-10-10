@@ -34,6 +34,7 @@
 #
 ###
 
+include("${CMAKE_CURRENT_LIST_DIR}/BextGit.cmake")
 
 ###############################################################################
 # It is common for more complex targets to need to key build settings off of
@@ -102,23 +103,8 @@ endmacro(TargetInstallDeps root)
 function(git_submodule_init path checkfile)
   string(REGEX REPLACE "[^A-Za-z0-9_+.-]" "_" stamp_name "${path}")
   set(sha1_stamp "${CMAKE_CURRENT_BINARY_DIR}/build_sha1_${stamp_name}.txt")
-  if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${path}/${checkfile})
-    find_program(GIT_EXECUTABLE git)
-    if (NOT GIT_EXECUTABLE)
-      message(FATAL_ERROR "Need to populate Git submodule, but unable to find git executable")
-    endif (NOT GIT_EXECUTABLE)
-    set(git_args submodule update --init --recursive)
-    if (GIT_SHALLOW_CLONE)
-      list(APPEND git_args --recommend-shallow)
-    endif (GIT_SHALLOW_CLONE)
-    if (WIN32)
-      list(PREPEND git_args -c core.longpaths=true)
-    endif (WIN32)
-    execute_process(
-      COMMAND ${GIT_EXECUTABLE} ${git_args} ${path}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-      COMMAND_ERROR_IS_FATAL ANY
-    )
+  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${path}/${checkfile}")
+    bext_git_submodule_update("${CMAKE_CURRENT_SOURCE_DIR}" -- "${path}")
     if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${path}/${checkfile}")
       message(FATAL_ERROR "Git submodule ${path} is missing ${checkfile} after checkout")
     endif ()
@@ -129,7 +115,7 @@ function(git_submodule_init path checkfile)
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     file(WRITE "${sha1_stamp}" ${GIT_SHA1})
-  else (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${path}/${checkfile})
+  else ()
     execute_process(
       COMMAND git log -1 --format=%H
       WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${path}
@@ -148,7 +134,7 @@ function(git_submodule_init path checkfile)
       endif (NOT "${BUILD_SHA1}" MATCHES "${GIT_SHA1}")
     endif()
     file(WRITE "${sha1_stamp}" ${GIT_SHA1})
-  endif (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${path}/${checkfile})
+  endif ()
 endfunction(git_submodule_init path)
 
 ###############################################################################

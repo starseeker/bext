@@ -1,6 +1,8 @@
 set(bext_root "${CMAKE_CURRENT_LIST_DIR}/..")
 get_filename_component(bext_root "${bext_root}" ABSOLUTE)
 
+include("${CMAKE_CURRENT_LIST_DIR}/BextGit.cmake")
+
 if (NOT DEFINED PROFILE)
   message(FATAL_ERROR "Set PROFILE to one of: auto, bundled, minimal, everything")
 endif (NOT DEFINED PROFILE)
@@ -73,19 +75,6 @@ if (LIST_ONLY)
   return()
 endif (LIST_ONLY)
 
-set(git_args submodule update --init --recursive --jobs 8)
-if (GIT_SHALLOW_CLONE)
-  list(APPEND git_args --recommend-shallow)
-endif (GIT_SHALLOW_CLONE)
-list(APPEND git_args -- ${project_paths})
-if (WIN32)
-  list(PREPEND git_args -c core.longpaths=true)
-endif (WIN32)
-
-execute_process(
-  COMMAND ${GIT_EXECUTABLE} ${git_args}
-  WORKING_DIRECTORY ${bext_root}
-  COMMAND_ERROR_IS_FATAL ANY
-)
+bext_git_submodule_update("${bext_root}" --jobs 8 -- ${project_paths})
 
 message(STATUS "Bootstrap complete for profile ${profile}")
