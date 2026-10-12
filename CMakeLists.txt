@@ -356,7 +356,7 @@ option(USE_TCL          "Tcl/Tk support"                             ON)
 # An Xmin prefix selects a coherent toolkit build profile.  Individual
 # dependency logic applies the version-matched patches only when that
 # dependency is selected for a local build.
-set(BEXT_XMIN_ROOT "" CACHE PATH "Installed Xmin SDK used by bundled Tk and Qt")
+set(BEXT_XMIN_ROOT "" CACHE PATH "Installed Xmin SDK used by bundled Tk, Qt, and FLTK")
 if (BEXT_XMIN_ROOT)
   if (NOT UNIX OR APPLE)
     message(FATAL_ERROR "The bext Xmin profile currently requires Linux or BSD")
@@ -365,7 +365,7 @@ if (BEXT_XMIN_ROOT)
     message(FATAL_ERROR "BEXT_XMIN_ROOT is not an installed SDK: ${BEXT_XMIN_ROOT}")
   endif ()
   file(REAL_PATH "${BEXT_XMIN_ROOT}" BEXT_XMIN_ROOT)
-  set(BEXT_XMIN_ROOT "${BEXT_XMIN_ROOT}" CACHE PATH "Installed Xmin SDK used by bundled Tk and Qt" FORCE)
+  set(BEXT_XMIN_ROOT "${BEXT_XMIN_ROOT}" CACHE PATH "Installed Xmin SDK used by bundled Tk, Qt, and FLTK" FORCE)
 endif ()
 
 
@@ -657,6 +657,14 @@ add_project(opennurbs GROUPS "BRLCAD")
 # OSMesa - Off Screen Mesa Rendering Library
 # https://github.com/starseeker/osmesa
 add_project(osmesa GROUPS "BRLCAD")
+
+# FLTK - lightweight graphical toolkit for the FLTK geometry editor
+# https://github.com/fltk/fltk
+add_project(fltk GROUPS "BRLCAD_EXTRA")
+
+# litehtml - HTML layout engine used by libfltkcad
+# https://github.com/litehtml/litehtml
+add_project(litehtml GROUPS "BRLCAD_EXTRA")
 
 # Bullet3 - collision detection/multi-physics simulation library
 # https://github.com/bulletphysics/bullet3
