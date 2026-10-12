@@ -5,6 +5,10 @@
 /*-build
 /out
 
+# Optional local dependency snapshots
+/fltk/fltk/
+/litehtml/litehtml/
+
 # Temporary files
 *~
 \#*\#

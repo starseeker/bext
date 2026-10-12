@@ -1,0 +1,43 @@
+cad_enable(LITEHTML "libfltkcad")
+bext_local_source(LITEHTML litehtml https://github.com/litehtml/litehtml 4a651c5226b62bd58fc8c07dac7374171dea4a1e)
+
+if (ENABLE_LITEHTML)
+  RegisterDeps(LITEHTML)
+
+  ExternalProject_Add(LITEHTML_BLD
+    URL "${CMAKE_CURRENT_SOURCE_DIR}/litehtml"
+    BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+    PATCH_COMMAND ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS} -i ${CMAKE_CURRENT_SOURCE_DIR}/litehtml.patch
+    CMAKE_ARGS
+    ${BUILD_TYPE_SPECIFIER}
+    # These archives are linked into shared CAD libraries.
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+    -DBUILD_SHARED_LIBS=OFF
+    -DLITEHTML_BUILD_TESTING=OFF
+    -DLITEHTML_ENABLE_LINT=OFF
+    -DEXTERNAL_GUMBO=OFF
+    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+    -DCMAKE_INSTALL_PREFIX=${CMAKE_BUNDLE_INSTALL_PREFIX}
+    -DCMAKE_INSTALL_LIBDIR:PATH=${LIB_DIR}
+    -DCMAKE_INSTALL_RPATH=${CMAKE_BUNDLE_INSTALL_PREFIX}/${LIB_DIR}
+    LOG_CONFIGURE ${EXT_BUILD_QUIET}
+    LOG_BUILD ${EXT_BUILD_QUIET}
+    LOG_INSTALL ${EXT_BUILD_QUIET}
+    LOG_OUTPUT_ON_FAILURE ${EXT_BUILD_QUIET}
+    STEP_TARGETS install
+  )
+  TargetInstallDeps(LITEHTML LITEHTML_DEPENDS)
+
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/litehtml/LICENSE
+    ${DOC_LICENSE_DIR}/litehtml.txt COPYONLY)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/litehtml/src/gumbo/LICENSE
+    ${DOC_LICENSE_DIR}/gumbo.txt COPYONLY)
+endif ()
+
+# Local Variables:
+# tab-width: 8
+# mode: cmake
+# indent-tabs-mode: t
+# End:
+# ex: shiftwidth=2 tabstop=8

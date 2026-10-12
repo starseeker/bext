@@ -189,6 +189,21 @@ endfunction(cad_enable pname components)
 # to wrap that pattern up so we can more easily adjust it for multiple projects
 # simultaneously.
 ###############################################################################
+# Local snapshots are optional until their upstreams become submodules.  The
+# source URL and revision also supply provenance to the dependency inventory.
+function(bext_local_source pname path url revision)
+  if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${path}/CMakeLists.txt" AND NOT DISABLE_${pname})
+    set(enabled ON)
+  else ()
+    set(enabled OFF)
+    if (NOT DISABLE_${pname})
+      message(STATUS "${pname}: local source ${path} is absent; build disabled")
+    endif ()
+  endif ()
+  set(ENABLE_${pname} ${enabled} CACHE BOOL "Build the local ${pname} snapshot when present" FORCE)
+  set(ENABLE_${pname} ${enabled} PARENT_SCOPE)
+endfunction()
+
 macro(bext_enable pname)
   string(TOUPPER "${pname}" upname)
   #string(TOLOWER "${pname}" lpname)
