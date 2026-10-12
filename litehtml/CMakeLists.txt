@@ -1,4 +1,4 @@
-cad_enable(LITEHTML "brlman")
+cad_enable(LITEHTML "brlman;libfltkcad")
 
 bext_enable(LITEHTML)
 
