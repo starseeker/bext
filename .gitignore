@@ -5,6 +5,9 @@
 /*-build
 /out
 
+# Optional local FLTK snapshot
+/fltk/fltk/
+
 # Temporary files
 *~
 \#*\#

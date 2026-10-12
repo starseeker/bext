@@ -32,6 +32,7 @@ selection further.
 | `embree` | `USE_APPLESEED`, `USE_OSPRAY` | `install` | `boost`, `onetbb`, `patch`, `zlib` | [repository](https://github.com/BRL-CAD/embree) |
 | `expat` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/libexpat) |
 | `flexbison` | `USE_APPLESEED`, `USE_OSPRAY` | `noinstall` | — | [repository](https://github.com/BRL-CAD/winflexbison) |
+| `fltk` | `USE_BRLCAD_EXTRA` | `install` | `patch` | [repository](https://github.com/fltk/fltk) |
 | `fmt` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/fmt) |
 | `gdal` | `USE_GDAL` | `install` | `patch`, `png`, `proj`, `sqlite3`, `tiff`, `zlib` | [repository](https://github.com/BRL-CAD/gdal) |
 | `gte` | `USE_BRLCAD` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/GeometricTools) |

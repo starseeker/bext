@@ -82,6 +82,13 @@ present and disables it when absent. No checkout or download is attempted.
 If the decision is made to incorporate such a dependency, its submodule will
 be added and it will become part of the "regular" bext setup.
 
+For the FLTK geometry editor, place the matching upstream FLTK snapshot in
+`fltk/fltk`. `BRLCAD_COMPONENTS` and `DISABLE_FLTK` can exclude it. The wrapper
+builds position-independent archives for `libfltkcad`, installs CMake packages
+under `install/`, and copies the upstream license alongside the other
+dependencies. `BEXT_XMIN_ROOT` selects the matching FLTK Xmin patch and toolkit
+profile. See `fltk/CMakeLists.txt` for the snapshot revision used by the patch.
+
 # Official profiles
 
 The supported configure entry points are:
