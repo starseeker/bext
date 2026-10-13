@@ -1,0 +1,101 @@
+--- a/FL/Fl_Terminal.H
++++ b/FL/Fl_Terminal.H
+@@ -854,6 +854,7 @@
+   //    See README-Fl_Terminal.txt, section "RING BUFFER DESCRIPTION" for diagrams/info.
+   //
+   // Ring buffer
++  int            wrap_columns_;    // output margin; zero uses the full ring width
+   RingBuffer     ring_;             // terminal history/display ring buffer
+   Cursor         cursor_;           // terminal cursor (position, color, etc)
+   Margin         margin_;           // terminal margins (top,left,bottom,right)
+@@ -1092,6 +1093,12 @@
+   void  display_rows(int val);
+   int   display_columns(void) const;
+   void  display_columns(int val);
++  /** Output wrapping margin, independent of the history buffer width.
++      Zero uses display_columns().  A smaller margin preserves wide history
++      while new output wraps to the current viewport.  Existing rows are not
++      reflowed.  Values are clamped to the allocated display width. */
++  void  wrap_columns(int val);
++  int   wrap_columns(void) const;
+   // API: Box
+   /// Sets the box type, updates terminal margins et al. Default is FL_DOWN_FRAME.
+   ///
+--- a/src/Fl_Terminal.cxx
++++ b/src/Fl_Terminal.cxx
+@@ -1420,6 +1420,16 @@
+   update_scrollbar();
+ }
+ 
++// Keep the write margin separate from storage so shrinking a viewport
++// never truncates text already in the history buffer.
++void Fl_Terminal::wrap_columns(int val) {
++  wrap_columns_ = val > 0 ? val : 0;
++}
++
++int Fl_Terminal::wrap_columns(void) const {
++  return wrap_columns_ > 0 ? MIN(wrap_columns_, disp_cols()) : disp_cols();
++}
++
+ // Resize the display's columns
+ //    This affects the history and entire ring buffer too.
+ //    Make an effort to preserve previous content.
+@@ -2504,9 +2514,9 @@
+ */
+ void Fl_Terminal::cursor_right(int count, bool do_scroll) {
+   while (count-- > 0) {
+-    if (cursor_.right() >= disp_cols()) {      // hit right edge?
++    if (cursor_.right() >= wrap_columns()) {      // hit right edge?
+       if (!do_scroll)                          // no scroll?
+-        { cursor_eol(); return; }              // stop at EOL, done
++        { cursor_.col(wrap_columns()-1); return; } // stop at margin, done
+       else
+         { cursor_crlf(1); }                    // do scroll? crlf
+     }
+@@ -2517,7 +2527,7 @@
+ void Fl_Terminal::cursor_home(void) { cursor_.col(0); cursor_.row(0); }
+ 
+ /** Move cursor to the last column (at the far right) on the current line. */
+-void Fl_Terminal::cursor_eol(void) { cursor_.col(disp_cols()-1); }
++void Fl_Terminal::cursor_eol(void) { cursor_.col(wrap_columns()-1); }
+ 
+ /** Move cursor to the first column (at the far left) on the current line. */
+ void Fl_Terminal::cursor_sol(void) { cursor_.col(0); }
+@@ -2535,11 +2545,11 @@
+ 
+ /// Tab right, do not wrap beyond right edge.
+ void Fl_Terminal::cursor_tab_right(int count) {
+-  count = clamp(count, 1, disp_cols());           // sanity
++  count = clamp(count, 1, wrap_columns());           // sanity
+   int X = cursor_.col();
+   while (count-- > 0) {
+     // Find next tabstop
+-    while (++X < disp_cols()) {
++    while (++X < wrap_columns()) {
+       if ( (X<tabstops_size_) && tabstops_[X] )   // found?
+         { cursor_.col(X); return; }               // move cur, done
+     }
+@@ -3118,6 +3128,7 @@
+   } else if (escseq.parse_in_progress()) {     // ESC sequence in progress?
+     handle_escseq(*text);
+   } else {                                     // Handle printable char..
++    if (cursor_col() >= wrap_columns()) cursor_crlf(1);
+     plot_char(text, len, cursor_row(), cursor_col());
+     cursor_right(1, do_scroll);
+   }
+@@ -3139,6 +3150,7 @@
+   } else if (escseq.parse_in_progress()) {     // ESC sequence in progress?
+     handle_escseq(c);
+   } else {                                     // Handle printable char..
++    if (cursor_col() >= wrap_columns()) cursor_crlf(1);
+     plot_char(c, cursor_row(), cursor_col());
+     cursor_right(1, do_scroll);
+     return;
+@@ -3445,6 +3457,7 @@
+ 
+ // Private constructor method
+ void Fl_Terminal::init_(int X,int Y,int W,int H,const char*L,int rows,int cols,int hist,bool fontsize_defer) {
++  wrap_columns_ = 0;
+   error_char_ = "¿";
+   scrollbar = hscrollbar = 0;           // avoid problems w/update_screen_xywh()
+   // currently unused params
