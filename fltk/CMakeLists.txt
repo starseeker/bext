@@ -4,10 +4,11 @@ bext_local_source(FLTK fltk https://github.com/fltk/fltk 7721054c33258c8eb453234
 if (ENABLE_FLTK)
   RegisterDeps(FLTK)
 
-  set(fltk_patch_command)
+  set(fltk_patch_command PATCH_COMMAND
+    ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS} -i ${CMAKE_CURRENT_SOURCE_DIR}/fltk_terminal_wrap.patch)
   set(fltk_xmin_args)
   if (BEXT_XMIN_ROOT)
-    set(fltk_patch_command PATCH_COMMAND
+    list(APPEND fltk_patch_command COMMAND
       ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS} -i ${CMAKE_CURRENT_SOURCE_DIR}/fltk_xmin.patch)
     set(fltk_xmin_args
       -DFLTK_USE_XMIN=ON
@@ -48,6 +49,8 @@ if (ENABLE_FLTK)
     LOG_OUTPUT_ON_FAILURE ${EXT_BUILD_QUIET}
     STEP_TARGETS install
   )
+  ExternalProject_Add_StepDependencies(FLTK_BLD patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/fltk_terminal_wrap.patch)
   TargetInstallDeps(FLTK FLTK_DEPENDS)
 
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fltk/COPYING
