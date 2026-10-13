@@ -126,6 +126,7 @@
 [submodule "itk/itk"]
 	path = itk/itk
 	url = https://github.com/BRL-CAD/itk
+	branch = main
 	ignore = dirty
         shallow = true
 [submodule "iwidgets/iwidgets"]
