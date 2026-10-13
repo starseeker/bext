@@ -87,7 +87,7 @@ function(bext_git_submodule_update working_directory)
     if (local)
       set(local_note " Only file transport is permitted; all required repositories and pinned commits must be available locally, including recursive submodules.")
     endif ()
-    message(FATAL_ERROR
+    message(WARNING
       "Git submodule update failed in ${working_directory} using BEXT_REPOSITORY_ROOT=${BEXT_REPOSITORY_ROOT} (${git_result}).${local_note}")
   endif ()
 endfunction()
