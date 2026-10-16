@@ -330,3 +330,62 @@ cmake --build build/context-cross
 The fixture needs only target object/archive support.  That is useful for
 testing build orchestration without an SDK, but does not validate target
 headers, executable linking, DLL loading, or the full dependency stack.
+
+## Windows toolchain profiles
+
+The experimental profiles under `CMake/toolchains/` cover three distinct
+toolchain families:
+
+| Profile | Compiler and runtime |
+| --- | --- |
+| `windows-mingw-gcc.cmake` | MinGW-w64 GCC and its matching runtime |
+| `windows-llvm-mingw.cmake` | LLVM-MinGW wrappers, CRT, and C++ runtime |
+| `windows-clang-cl.cmake` | clang-cl, LLD, Windows SDK, and VC runtime |
+
+Start with the build-context fixture when checking a new installation:
+
+```sh
+cmake -S CMake/tests/build_contexts -B build/context-mingw -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$PWD/CMake/toolchains/windows-mingw-gcc.cmake" \
+  -DBEXT_TOOLCHAIN_ROOT=/opt/mingw \
+  -DBEXT_WINDOWS_SYSROOT=/opt/mingw/x86_64-w64-mingw32
+cmake --build build/context-mingw
+```
+
+For LLVM-MinGW, select `windows-llvm-mingw.cmake` and point
+`BEXT_TOOLCHAIN_ROOT` to the LLVM-MinGW installation.  Both MinGW profiles
+default to the target root beside the toolchain's `bin/` directory when that
+directory exists.  Otherwise, set `BEXT_WINDOWS_SYSROOT` explicitly.  This
+variable controls CMake dependency searches; compiler wrappers retain their
+own runtime search configuration.  Use matching runtime and C++ libraries
+throughout each build.
+
+For clang-cl, provide a locally installed LLVM toolchain and an SDK tree:
+
+```sh
+cmake -S CMake/tests/build_contexts -B build/context-clangcl -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$PWD/CMake/toolchains/windows-clang-cl.cmake" \
+  -DBEXT_TOOLCHAIN_ROOT=/opt/llvm \
+  -DBEXT_WINDOWS_SDK_ROOT=/opt/windows-sdk
+cmake --build build/context-clangcl
+```
+
+The SDK tree must contain `Windows Kits/10/{Include,Lib}/<version>/` and
+`VC/Tools/MSVC/<version>/{include,lib}/`.  Version selection defaults to the
+highest installed version; pin it with `BEXT_WINDOWS_SDK_VERSION` and
+`BEXT_WINDOWS_VC_VERSION`.  Supply SDK headers/libraries prepared for the
+host filesystem's case sensitivity.  The profile does not download an SDK
+or repair filename casing.  It forwards the SDK to both the compiler and
+linker and supplies SDK include directories to resource compilation.
+
+`BEXT_WINDOWS_ARCH` defaults to `x86_64`; `i686` is available for all profiles
+and `aarch64` for the LLVM profiles.  Architectures and SDK combinations
+still need validation with their actual runtimes.  Individual `CMAKE_*` tool
+paths can override discovery.  With an explicit `BEXT_TOOLCHAIN_ROOT`, missing
+tools are errors instead of falling back to another toolchain installation.
+Developer-supplied CMake toolchain files remain supported.
+
+Normal configuration checks executable linking.  For an object/archive-only
+orchestration test without a complete SDK, additionally pass
+`-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY`.  Do not use that setting to
+claim a working Windows toolchain: it deliberately skips the link check.

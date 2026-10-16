@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.26)
 project(BextBuildContextTest LANGUAGES C CXX)
 get_filename_component(bext_cmake "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
 set(CMAKE_NOBUNDLE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/noinstall")
+set(CMAKE_BUNDLE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install")
 include("${bext_cmake}/BextBuildContexts.cmake")
 include("${bext_cmake}/BextExternalProject.cmake")
 
