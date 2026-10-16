@@ -84,5 +84,8 @@ if (LIST_ONLY)
 endif (LIST_ONLY)
 
 bext_git_submodule_update("${bext_root}" --jobs 8 -- ${project_paths})
+if (NOT BEXT_GIT_UPDATE_RESULT STREQUAL "0")
+  message(FATAL_ERROR "Bootstrap failed for profile ${profile}: Git submodule update returned ${BEXT_GIT_UPDATE_RESULT}")
+endif ()
 
 message(STATUS "Bootstrap complete for profile ${profile}")

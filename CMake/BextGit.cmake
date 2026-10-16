@@ -367,6 +367,9 @@ function(bext_git_submodule_update working_directory)
     WORKING_DIRECTORY "${working_directory}"
     RESULT_VARIABLE git_result
   )
+  # Configure callers may tolerate missing optional nested sources; bootstrap
+  # needs the result so it cannot report success after an incomplete checkout.
+  set(BEXT_GIT_UPDATE_RESULT "${git_result}" PARENT_SCOPE)
   if (NOT git_result STREQUAL "0")
     set(local_note "")
     get_property(file_only GLOBAL PROPERTY BEXT_GIT_FILE_ONLY)
