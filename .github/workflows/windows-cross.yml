@@ -4,7 +4,7 @@ on: [push, pull_request, workflow_dispatch]
 
 jobs:
   tcl_stack:
-    name: Linux to Windows Tcl stack (${{ matrix.compiler }})
+    name: Linux to Windows dependencies (${{ matrix.compiler }})
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
@@ -71,6 +71,19 @@ jobs:
           file build/noinstall/host/bin/tclsh8.6 build/noinstall/host/bin/tktable_hdr
           file build/install/bin/*.exe build/install/bin/*.dll consumer/*.dll
 
+      - name: Build BRL-CAD core dependencies with LLVM-MinGW
+        if: matrix.compiler == 'llvm-mingw'
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: 4
+        run: |
+          cmake -S . -B build -DUSE_BRLCAD=ON -DENABLE_LIEF=OFF -DENABLE_PLIEF=OFF
+          cmake --build build --parallel 2
+          cmake -S CMake/tests/opennurbs_consumer -B consumer-nurbs -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/CMake/toolchains/windows-llvm-mingw.cmake" \
+            -DBEXT_TOOLCHAIN_ROOT="$RUNNER_TEMP/llvm-mingw" \
+            -DBEXT_OPENNURBS_PREFIX="$GITHUB_WORKSPACE/build/install"
+          cmake --build consumer-nurbs --verbose
+
       - name: Upload diagnostic logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -83,3 +96,4 @@ jobs:
             build/**/*-err.log
             build/**/*-out.log
             consumer/**/CMakeConfigureLog.yaml
+            consumer-nurbs/**/CMakeConfigureLog.yaml

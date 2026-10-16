@@ -475,6 +475,38 @@ The check fails explicitly if no runner is supplied; compiling its Windows
 test executable alone does not validate DLL loading.  Tcl package loading
 and graphical behavior need additional target runtime tests.
 
+The LLVM-MinGW CI job also enables the BRL-CAD core dependency group, with
+LIEF/PLIEF disabled and the optional BRL-CAD, Qt, GDAL, and renderer groups
+still off.  To repeat that broader build after the Tcl-only configuration:
+
+```sh
+cmake -S . -B build/windows-tcl \
+  -DUSE_BRLCAD=ON -DENABLE_LIEF=OFF -DENABLE_PLIEF=OFF
+cmake --build build/windows-tcl --parallel 2
+```
+
+The same local LLVM-MinGW setup has completed this configuration through
+compilation, installation, and bundle manifest generation.  This validates
+the selected dependencies; it does not yet validate a downstream BRL-CAD
+cross build.
+
+The installed OpenNURBS interface has a separate consumer fixture.  It
+checks integer/UUID layout and links calls to the Windows filesystem,
+UUID, locale, and formatting implementations:
+
+```sh
+cmake -S CMake/tests/opennurbs_consumer -B build/windows-nurbs-consumer -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$PWD/CMake/toolchains/windows-llvm-mingw.cmake" \
+  -DBEXT_TOOLCHAIN_ROOT=/opt/llvm-mingw \
+  -DBEXT_OPENNURBS_PREFIX="$PWD/build/windows-tcl/install"
+cmake --build build/windows-nurbs-consumer
+```
+
+Its CTest runtime check is disabled during cross compilation unless
+`CMAKE_CROSSCOMPILING_EMULATOR` is supplied.  Configure the runner's DLL
+search path to include the installed dependencies and compiler runtime.
+The native FreeBSD build and runtime check have also been validated.
+
 clang-cl target Tcl still needs a replacement for the native Windows
 batch/nmake path and reports an explicit error during a cross build.
 System Tcl/Tk validation also cannot run target extensions on the host and
