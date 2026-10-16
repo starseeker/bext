@@ -1,7 +1,7 @@
 diff -Naur sqlite3.orig/CMakeLists.txt SQLITE3_BLD/CMakeLists.txt
 --- sqlite3.orig/CMakeLists.txt	1969-12-31 19:00:00.000000000 -0500
 +++ SQLITE3_BLD/CMakeLists.txt	2023-09-17 12:22:10.246469660 -0400
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,107 @@
 +#                     C M A K E L I S T S . T X T
 +# BRL-CAD
 +#
@@ -78,18 +78,22 @@ diff -Naur sqlite3.orig/CMakeLists.txt SQLITE3_BLD/CMakeLists.txt
 +add_definitions(-DSQLITE_OMIT_LOAD_EXTENSION -DSQLITE_ENABLE_RTREE=1)
 +set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 +
-+add_library(libsqlite3 SHARED sqlite3.c)
-+set_target_properties(libsqlite3 PROPERTIES PREFIX "")
-+set_target_properties(libsqlite3 PROPERTIES VERSION 3.41.2 SOVERSION 3)
-+target_link_libraries(libsqlite3 PRIVATE Threads::Threads ${M_LIBRARY})
-+set_property(TARGET libsqlite3 APPEND PROPERTY COMPILE_DEFINITIONS "SQLITE_ENABLE_RTREE")
-+set_property(TARGET libsqlite3 APPEND PROPERTY COMPILE_DEFINITIONS "SQLITE_DLL_EXPORTS")
-+set_property(TARGET libsqlite3 APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS "SQLITE_DLL_IMPORTS")
-+install(TARGETS libsqlite3
-+  RUNTIME DESTINATION ${BIN_DIR}
-+  LIBRARY DESTINATION ${LIB_DIR}
-+  ARCHIVE DESTINATION ${LIB_DIR}
-+  )
++option(SQLITE_BUILD_SHELL_ONLY "Build only the native database generator" OFF)
++if (NOT SQLITE_BUILD_SHELL_ONLY)
++  add_library(libsqlite3 SHARED sqlite3.c)
++  set_target_properties(libsqlite3 PROPERTIES PREFIX "")
++  set_target_properties(libsqlite3 PROPERTIES VERSION 3.41.2 SOVERSION 3)
++  target_link_libraries(libsqlite3 PRIVATE Threads::Threads ${M_LIBRARY})
++  set_property(TARGET libsqlite3 APPEND PROPERTY COMPILE_DEFINITIONS "SQLITE_ENABLE_RTREE")
++  set_property(TARGET libsqlite3 APPEND PROPERTY COMPILE_DEFINITIONS "SQLITE_DLL_EXPORTS")
++  set_property(TARGET libsqlite3 APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS "SQLITE_DLL_IMPORTS")
++  install(TARGETS libsqlite3
++    RUNTIME DESTINATION ${BIN_DIR}
++    LIBRARY DESTINATION ${LIB_DIR}
++    ARCHIVE DESTINATION ${LIB_DIR}
++    )
++  install(FILES sqlite3.h sqlite3ext.h DESTINATION ${INCLUDE_DIR})
++endif ()
 +
 +add_executable(sqlite3 sqlite3.c shell.c)
 +target_link_libraries(sqlite3 Threads::Threads ${M_LIBRARY})
@@ -98,8 +102,6 @@ diff -Naur sqlite3.orig/CMakeLists.txt SQLITE3_BLD/CMakeLists.txt
 +  LIBRARY DESTINATION ${LIB_DIR}
 +  ARCHIVE DESTINATION ${LIB_DIR}
 +  )
-+
-+install(FILES sqlite3.h sqlite3ext.h DESTINATION ${INCLUDE_DIR})
 +
 +# Local Variables:
 +# tab-width: 8
