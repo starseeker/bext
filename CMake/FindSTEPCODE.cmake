@@ -43,7 +43,8 @@
 
 
 # A user may set ``STEPCODE_ROOT`` to a stepcode installation root to tell this
-# module where to look.
+# module where to look.  Cross builds use ``STEPCODE_HOST_ROOT`` to find native
+# exp2cxx and exppp, or accept their executable path variables directly.
 # =============================================================================
 
 # Check that each of the libraries has an expected header,
@@ -108,12 +109,21 @@ foreach(search ${_STEPCODE_SEARCHES})
   #TODO - should be an all-or-nothing for the set...
 endforeach()
 
-# Allow STEPCODE_LIBRARY to be set manually, as the location of the netpbm library
-foreach(search ${_STEPCODE_SEARCHES})
-  find_program(EXP2CXX_EXECUTABLE exp2cxx ${${search}} PATH_SUFFIXES bin)
-  find_program(EXPPP_EXECUTABLE exppp ${${search}} PATH_SUFFIXES bin)
-  #TODO - should be an all-or-nothing for the set...
-endforeach()
+# These programs execute during compilation.  A target library prefix must
+# not supply them when the host and target platforms differ.
+if(CMAKE_CROSSCOMPILING)
+  foreach(tool EXP2CXX EXPPP)
+    string(TOLOWER "${tool}" program)
+    find_program(${tool}_EXECUTABLE ${program} HINTS "${STEPCODE_HOST_ROOT}/bin"
+      NO_CMAKE_FIND_ROOT_PATH NO_PACKAGE_ROOT_PATH NO_CMAKE_PATH
+      NO_CMAKE_ENVIRONMENT_PATH NO_CMAKE_INSTALL_PREFIX)
+  endforeach()
+else()
+  foreach(search ${_STEPCODE_SEARCHES})
+    find_program(EXP2CXX_EXECUTABLE exp2cxx ${${search}} PATH_SUFFIXES bin)
+    find_program(EXPPP_EXECUTABLE exppp ${${search}} PATH_SUFFIXES bin)
+  endforeach()
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(STEPCODE DEFAULT_MSG

@@ -1,0 +1,6 @@
+SCHEMA bext_cross;
+ENTITY sample;
+  label : STRING;
+  count : INTEGER;
+END_ENTITY;
+END_SCHEMA;
