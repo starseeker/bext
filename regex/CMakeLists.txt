@@ -17,8 +17,10 @@ if (ENABLE_REGEX)
   # guarantee that our libregex symbols will override libc. We'll avoid the
   # issue by renaming our libregex symbols to be incompatible with libc.
   ExternalProject_Add(REGEX_BLD
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/regex"
+    URL "${CMAKE_CURRENT_SOURCE_DIR}/regex"
     BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+    PATCH_COMMAND ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS}
+      -i "${CMAKE_CURRENT_SOURCE_DIR}/regex_windows_headers.patch"
     CMAKE_ARGS
     ${BUILD_TYPE_SPECIFIER}
     -DBIN_DIR=${BIN_DIR}
