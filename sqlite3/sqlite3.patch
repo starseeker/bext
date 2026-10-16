@@ -1,7 +1,7 @@
 diff -Naur sqlite3.orig/CMakeLists.txt SQLITE3_BLD/CMakeLists.txt
 --- sqlite3.orig/CMakeLists.txt	1969-12-31 19:00:00.000000000 -0500
 +++ SQLITE3_BLD/CMakeLists.txt	2023-09-17 12:22:10.246469660 -0400
-@@ -0,0 +1,122 @@
+@@ -0,0 +1,124 @@
 +#                     C M A K E L I S T S . T X T
 +# BRL-CAD
 +#
@@ -90,18 +90,22 @@ diff -Naur sqlite3.orig/CMakeLists.txt SQLITE3_BLD/CMakeLists.txt
 +string(REGEX REPLACE ".*\"([0-9.]+)\".*" "\\1"
 +  SQLITE_VERSION "${SQLITE_VERSION_LINE}")
 +
-+add_library(libsqlite3 SHARED sqlite3.c)
-+set_target_properties(libsqlite3 PROPERTIES PREFIX "")
-+set_target_properties(libsqlite3 PROPERTIES VERSION ${SQLITE_VERSION} SOVERSION 3)
-+target_link_libraries(libsqlite3 PRIVATE Threads::Threads ${M_LIBRARY})
-+set_property(TARGET libsqlite3 APPEND PROPERTY COMPILE_DEFINITIONS "SQLITE_ENABLE_RTREE")
-+set_property(TARGET libsqlite3 APPEND PROPERTY COMPILE_DEFINITIONS "SQLITE_DLL_EXPORTS")
-+set_property(TARGET libsqlite3 APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS "SQLITE_DLL_IMPORTS")
-+install(TARGETS libsqlite3
-+  RUNTIME DESTINATION ${BIN_DIR}
-+  LIBRARY DESTINATION ${LIB_DIR}
-+  ARCHIVE DESTINATION ${LIB_DIR}
-+  )
++option(SQLITE_BUILD_SHELL_ONLY "Build only the native database generator" OFF)
++if (NOT SQLITE_BUILD_SHELL_ONLY)
++  add_library(libsqlite3 SHARED sqlite3.c)
++  set_target_properties(libsqlite3 PROPERTIES PREFIX "")
++  set_target_properties(libsqlite3 PROPERTIES VERSION ${SQLITE_VERSION} SOVERSION 3)
++  target_link_libraries(libsqlite3 PRIVATE Threads::Threads ${M_LIBRARY})
++  set_property(TARGET libsqlite3 APPEND PROPERTY COMPILE_DEFINITIONS "SQLITE_ENABLE_RTREE")
++  set_property(TARGET libsqlite3 APPEND PROPERTY COMPILE_DEFINITIONS "SQLITE_DLL_EXPORTS")
++  set_property(TARGET libsqlite3 APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS "SQLITE_DLL_IMPORTS")
++  install(TARGETS libsqlite3
++    RUNTIME DESTINATION ${BIN_DIR}
++    LIBRARY DESTINATION ${LIB_DIR}
++    ARCHIVE DESTINATION ${LIB_DIR}
++    )
++  install(FILES sqlite3.h sqlite3ext.h DESTINATION ${INCLUDE_DIR})
++endif ()
 +
 +option(SQLITE_BUILD_SHELL "Build and install the sqlite3 command-line shell" ON)
 +set(SQLITE_SHELL_INSTALL_DIR "${BIN_DIR}" CACHE PATH
@@ -115,8 +119,6 @@ diff -Naur sqlite3.orig/CMakeLists.txt SQLITE3_BLD/CMakeLists.txt
 +    ARCHIVE DESTINATION ${SQLITE_SHELL_INSTALL_DIR}
 +    )
 +endif (SQLITE_BUILD_SHELL)
-+
-+install(FILES sqlite3.h sqlite3ext.h DESTINATION ${INCLUDE_DIR})
 +
 +# Local Variables:
 +# tab-width: 8

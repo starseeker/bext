@@ -14,9 +14,21 @@ if (ENABLE_PROJ)
 
   RegisterDeps(PROJ)
 
+  if (CMAKE_CROSSCOMPILING)
+    if (NOT TARGET SQLITE3_HOST_BLD)
+      bext_find_host_program(BEXT_HOST_SQLITE3 NAMES sqlite3 REQUIRED)
+      execute_process(COMMAND "${BEXT_HOST_SQLITE3}" :memory: "SELECT sqlite_version();"
+        RESULT_VARIABLE sqlite_host_result OUTPUT_VARIABLE sqlite_host_version
+        ERROR_VARIABLE sqlite_host_error OUTPUT_STRIP_TRAILING_WHITESPACE)
+      if (NOT sqlite_host_result EQUAL 0 OR NOT sqlite_host_version MATCHES "^3[.][0-9]+[.][0-9]+$")
+        message(FATAL_ERROR "BEXT_HOST_SQLITE3 must be a runnable native SQLite 3 shell: ${sqlite_host_error}")
+      endif ()
+    endif ()
+    set(PROJ_SQLITE3_EXECUTABLE "${BEXT_HOST_SQLITE3}")
+
   # An empty EXE_SQLITE3 cache entry prevents PROJ's find_program call from
   # searching for a system shell.  Always pass the selected executable.
-  if (SQLITE3_TARGET)
+  elseif (SQLITE3_TARGET)
     set(PROJ_SQLITE3_EXECUTABLE
       "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}/sqlite3${CMAKE_EXECUTABLE_SUFFIX}")
   else ()
@@ -41,6 +53,7 @@ if (ENABLE_PROJ)
     -DPROJ_LIB_DIR=${CMAKE_BUNDLE_INSTALL_PREFIX}/${DATA_DIR}/proj
     -DSQLite3_ROOT=$<$<BOOL:${SQLITE3_TARGET}>:${CMAKE_BUNDLE_INSTALL_PREFIX}>
     -DEXE_SQLITE3=${PROJ_SQLITE3_EXECUTABLE}
+    -DSQLite3_EXECNAME=${PROJ_SQLITE3_EXECUTABLE}
     -DBUILD_TESTING=OFF
     -DBUILD_APPS=OFF
     -DENABLE_TIFF=OFF
@@ -55,6 +68,9 @@ if (ENABLE_PROJ)
     )
 
   TargetInstallDeps(PROJ PROJ_DEPENDS)
+  if (TARGET SQLITE3_HOST_BLD)
+    ExternalProject_Add_StepDependencies(PROJ_BLD configure SQLITE3_HOST_BLD-install)
+  endif ()
 
   # Copy the license into position in CMAKE_BUNDLE_INSTALL_PREFIX
   configure_file(
