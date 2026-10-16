@@ -88,19 +88,123 @@ Bootstrap runs separately from configure, so pass the setting to both commands
 if you use both workflows.  `LIST_ONLY=ON` previews bootstrap selection without
 fetching.
 
-CMake redirects `https://github.com/BRL-CAD/` URLs using command-scoped Git
-configuration, including recursive submodule operations.  Local roots enable
-file transport and forbid network transport for those Git operations.  They
-also disable shallow-clone recommendations, even with `GIT_SHALLOW_CLONE=ON`,
-so full mirrors can supply older pinned commits.  The mirrors must contain all
-required commits.  Recursive submodules outside that URL prefix need their
-own Git URL mappings and local mirrors; otherwise initialization fails.
+## Reusable per-dependency mappings
 
-The override does not change `.gitmodules` or install persistent Git rewrite
-settings.  To return CMake-driven updates to GitHub, set
-`-DBEXT_REPOSITORY_ROOT=https://github.com/BRL-CAD`.  Direct Git commands use
-their normal configuration.  This setting controls submodule fetching, not
-network access by dependency build scripts.
+To fetch dependencies from different mirrors or upstreams, copy the commented
+[mapping template](CMake/BextGitRemap.example), uncomment the entries you need,
+and replace their destinations.  It lists every submodule path and canonical
+URL, including the separate repositories within `flexbison`.
+
+```sh
+cmake --preset auto -DBEXT_GIT_REMAP=/path/to/mirrors.txt
+cmake -DPROFILE=auto -DBEXT_GIT_REMAP=/path/to/mirrors.txt \
+  -DLIST_ONLY=ON -P CMake/BextBootstrap.cmake
+```
+
+The second command previews bootstrap selection, resolved rewrite rules, and
+transport mode without fetching.  Omit `LIST_ONLY` to populate the submodules.
+Pass the same mapping file to both workflows if you use both.
+
+The file is data, with two optional sections:
+
+```ini
+# Exact, case-sensitive paths from bext's .gitmodules.
+[submodules]
+zlib/zlib = https://git.example.org/libraries/zlib.git
+png/libpng = /srv/git/libpng.git
+flexbison/flex = ../mirrors/flex.git
+flexbison/bison = git@mirror.example.org:tools/bison.git
+
+# Original URL prefix = replacement URL prefix; also applies during recursion.
+[urls]
+https://github.com/BRL-CAD/ = https://mirror.example.org/brlcad/
+https://other.example.org/vendor/ = ../mirrors/vendor/
+```
+
+Blank lines and full-line `#` comments are allowed.  Use UTF-8 text with LF or
+CRLF endings.  Each assignment splits at its first `=`; surrounding whitespace
+is ignored, and subsequent `=` characters belong to the value.  Do not quote
+values.  Spaces inside paths are supported.  There are no inline comments,
+variable substitutions, environment expansions, or includes.  Literal
+semicolons are unsupported.  Unknown sections or submodule paths, malformed
+entries, and duplicate keys within a section are errors with file/line diagnostics.
+
+A relative `BEXT_GIT_REMAP` filename is resolved against the bext source root.
+Relative destinations **inside the file** are resolved against the file's own
+directory, so the file is reusable from different working directories.  Prefix
+destinations retain their specified trailing slash; use one when replacing a
+directory prefix.  A `[submodules]` destination names a complete repository;
+CMake does not append a repository name or `.git` suffix.
+
+The file is read again on every configure or bootstrap invocation.  Changing it
+also triggers regeneration in configured builds.  Removing an entry removes
+that override; parsed mappings are not retained separately in the CMake cache.
+
+## Inline overrides and precedence
+
+For occasional exceptions, use semicolon-separated CMake lists:
+
+```sh
+cmake --preset auto -DBEXT_GIT_REMAP=/path/to/mirrors.txt \
+  '-DBEXT_SUBMODULE_URLS=zlib/zlib=https://special.example/zlib.git;png/libpng=/srv/git/libpng.git' \
+  '-DBEXT_GIT_URL_MAP=https://other.example.org/vendor/=https://special.example/vendor/'
+```
+
+`BEXT_SUBMODULE_URLS` corresponds to `[submodules]`, and `BEXT_GIT_URL_MAP` to
+`[urls]`.  An inline entry overrides the same key in its file section.  Relative
+inline destinations, like `BEXT_REPOSITORY_ROOT`, are relative to the bext source
+root.  Duplicate keys within an inline list are errors.  Quote the whole `-D`
+argument to protect it from the shell; an escaped literal semicolon is still
+unsupported as part of an entry.
+
+Submodule paths resolve to their canonical URLs from `.gitmodules`.  For an
+identical source prefix, submodule mappings take precedence over URL mappings,
+which take precedence over `BEXT_REPOSITORY_ROOT`.  Conflicting submodule
+mappings for the same canonical URL are errors.  Among different matching
+prefixes, Git uses the longest match.  Thus a repository-specific rule normally
+wins over a root-wide rule.
+
+These are Git's native `url.<replacement>.insteadOf` prefix rewrites, scoped to
+the Git process tree, including recursion.  Even a full repository URL is a
+prefix: a mapping for `https://example.org/lib` also matches
+`https://example.org/lib-extra`.  Identical URLs in nested submodules receive
+the same rewrite.  Rules match original URLs and do not chain; a rule for an
+already-rewritten destination will not apply a second time.  Normal user Git
+configuration still participates, so avoid competing rules for identical
+source prefixes outside bext.
+
+## Transport and pinned commits
+
+A local root defaults to file-only transport for all recursive Git operations.
+An explicit remote destination in the surviving mappings enables mixed local
+and network transport for that invocation, including other recursive fetches.
+The default remote root also permits mixing local and remote mappings.  A
+caller-supplied `GIT_ALLOW_PROTOCOL` allowlist remains a restriction in both
+modes.  Preview output reports file-only or mixed mode when local sources are
+configured.
+
+Local sources enable file transport and disable shallow-clone recommendations,
+even with `GIT_SHALLOW_CLONE=ON`, so full mirrors can supply older pinned commits.
+Recursive submodules outside mapped prefixes need their own mappings and local
+mirrors in file-only mode; otherwise initialization fails.  Environment-based
+Git configuration requires Git 2.31 or newer when populating submodules.
+
+Every replacement must contain the commits pinned by bext, including nested
+submodules.  An upstream repository may lack BRL-CAD-specific commits; changing
+the URL does not substitute an upstream release or change the pin.  There is no
+automatic fallback to another host.
+
+Overrides do not change `.gitmodules`, install persistent Git rewrite settings,
+or synchronize stored remote URLs.  Existing canonical remotes receive rewrites
+on subsequent CMake-driven updates; manually customized remotes need matching
+URL rules.  Reconfiguring a populated dependency does not force a fetch or
+replace its checkout.  Dependency inventory and SBOM URLs remain canonical.
+
+To remove all overrides, clear `BEXT_GIT_REMAP`, `BEXT_SUBMODULE_URLS`, and
+`BEXT_GIT_URL_MAP`, and reset `BEXT_REPOSITORY_ROOT` to
+`https://github.com/BRL-CAD`.  Direct Git commands use their normal configuration.
+These settings control submodule fetching, not network access by dependency
+build scripts.
 
 # Path and directory caveats
 
