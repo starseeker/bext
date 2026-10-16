@@ -507,11 +507,47 @@ Its CTest runtime check is disabled during cross compilation unless
 search path to include the installed dependencies and compiler runtime.
 The native FreeBSD build and runtime check have also been validated.
 
+## Native SQLite and STEPcode tools
+
+Cross builds of bundled SQLite provide `SQLITE3_HOST_BLD-install`, which
+installs a native command-line shell under the host prefix.  PROJ uses that
+shell to generate its architecture-independent `proj.db`, while linking
+against the target SQLite library.  With an external target SQLite, PROJ
+instead finds and checks a native shell; `BEXT_HOST_SQLITE3` can specify its
+pathname.  `FindSQLite3.cmake` accepts `SQLite3_HOST_ROOT` for native program
+discovery independently of the target `SQLite3_ROOT`.
+
+Bundled STEPcode provides `STEPCODE_HOST_BLD-install` for native `exp2cxx` and
+`exppp`.  These programs link their STEPcode support libraries statically.
+The target build still installs its own libraries and executables.  Downstream
+cross builds using `FindSTEPCODE.cmake` should set `STEPCODE_ROOT` to the target
+installation and `STEPCODE_HOST_ROOT` to the native tools prefix.
+
+After the core configuration above, build these selected optional dependencies:
+
+```sh
+cmake -S . -B build/windows-tcl -DUSE_BRLCAD_EXTRA=ON -DUSE_GDAL=ON
+cmake --build build/windows-tcl --parallel 2 --target PROJ_BLD-install \
+  STEPCODE_HOST_BLD-install STEPCODE_BLD-install
+cmake -S CMake/tests/stepcode_consumer -B build/windows-stepcode-consumer -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$PWD/CMake/toolchains/windows-llvm-mingw.cmake" \
+  -DBEXT_TOOLCHAIN_ROOT=/opt/llvm-mingw \
+  -DBEXT_STEPCODE_PREFIX="$PWD/build/windows-tcl/install" \
+  -DSTEPCODE_HOST_ROOT="$PWD/build/windows-tcl/noinstall/host"
+cmake --build build/windows-stepcode-consumer
+```
+
+The consumer runs native schema generation and compiles/links the generated
+code against the installed target libraries.  Local LLVM-MinGW validation has
+built both sets of programs, linked this consumer, and checked the generated
+PROJ database's integrity.  The native STEPcode consumer also passes its
+runtime check.  Both Windows GNU CI configurations exercise these builds.
+This does not validate the rest of the GDAL or optional BRL-CAD groups.
+
 clang-cl target Tcl still needs a replacement for the native Windows
 batch/nmake path and reports an explicit error during a cross build.
 System Tcl/Tk validation also cannot run target extensions on the host and
 is rejected.  Native Tcl alone does not supply BRL-CAD's `btclsh`, which
-needs native BRL-CAD libraries and extensions.  Qt host tools, STEPcode's
-`exp2cxx`, SQLite's database generator, other BRL-CAD generators, and target
-runtime probes still need integration before a complete Windows build can
-be claimed.
+needs native BRL-CAD libraries and extensions.  Qt host tools, other BRL-CAD
+generators, and target runtime probes still need integration before a complete
+Windows build can be claimed.

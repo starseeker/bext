@@ -84,6 +84,28 @@ jobs:
             -DBEXT_OPENNURBS_PREFIX="$GITHUB_WORKSPACE/build/install"
           cmake --build consumer-nurbs --verbose
 
+      - name: Build native database and schema generators with target libraries
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: 4
+        shell: bash
+        run: |
+          cmake -S . -B build -DUSE_BRLCAD=ON -DUSE_BRLCAD_EXTRA=ON \
+            -DUSE_GDAL=ON -DENABLE_LIEF=OFF -DENABLE_PLIEF=OFF
+          cmake --build build --parallel 2 --target PROJ_BLD-install \
+            STEPCODE_HOST_BLD-install STEPCODE_BLD-install
+          test "$(build/noinstall/host/bin/sqlite3 build/install/share/proj/proj.db \
+            'PRAGMA integrity_check;')" = ok
+          args=(-DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/CMake/toolchains/windows-${{ matrix.compiler }}.cmake")
+          if [[ '${{ matrix.compiler }}' == llvm-mingw ]]; then
+            args+=(-DBEXT_TOOLCHAIN_ROOT="$RUNNER_TEMP/llvm-mingw")
+          else
+            args+=(-DBEXT_WINDOWS_SYSROOT=/usr/x86_64-w64-mingw32)
+          fi
+          cmake -S CMake/tests/stepcode_consumer -B consumer-stepcode -G Ninja "${args[@]}" \
+            -DBEXT_STEPCODE_PREFIX="$GITHUB_WORKSPACE/build/install" \
+            -DSTEPCODE_HOST_ROOT="$GITHUB_WORKSPACE/build/noinstall/host"
+          cmake --build consumer-stepcode --verbose
+
       - name: Upload diagnostic logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -97,3 +119,4 @@ jobs:
             build/**/*-out.log
             consumer/**/CMakeConfigureLog.yaml
             consumer-nurbs/**/CMakeConfigureLog.yaml
+            consumer-stepcode/**/CMakeConfigureLog.yaml
