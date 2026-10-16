@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.26)
+
 set(bext_root "${CMAKE_CURRENT_LIST_DIR}/..")
 get_filename_component(bext_root "${bext_root}" ABSOLUTE)
 
@@ -74,6 +76,7 @@ string(REPLACE ";" ", " project_paths_str "${project_paths}")
 message(STATUS "bext bootstrap profile: ${profile}")
 message(STATUS "active USE_* groups: ${active_groups_str}")
 message(STATUS "project submodules: ${project_paths_str}")
+bext_git_print_mappings()
 
 if (LIST_ONLY)
   message(STATUS "LIST_ONLY is ON, skipping git submodule update")

@@ -1,0 +1,80 @@
+# Copy this file and pass -DBEXT_GIT_REMAP=/path/to/your-mirrors.txt.
+# Uncomment entries to replace individual repositories with mirrors or upstreams.
+# Every destination must supply the commit pinned by bext.
+# Relative local destinations are relative to this file. Do not quote values.
+# Full-line comments only; no variable expansion or includes.
+
+[submodules]
+# appleseed/appleseed = https://github.com/BRL-CAD/appleseed
+# assetimport/assimp = https://github.com/BRL-CAD/assimp
+# astyle/astyle = https://github.com/BRL-CAD/astyle
+# boost/boost = https://github.com/BRL-CAD/boost
+# bullet/bullet3 = https://github.com/BRL-CAD/bullet3.git
+# clipper2/Clipper2 = https://github.com/BRL-CAD/Clipper2.git
+# deflate/libdeflate = https://github.com/BRL-CAD/libdeflate
+# eigen/eigen = https://github.com/BRL-CAD/eigen
+# embree/embree = https://github.com/BRL-CAD/embree
+# expat/libexpat = https://github.com/BRL-CAD/libexpat
+# flexbison/bison = https://github.com/BRL-CAD/bison
+# flexbison/flex = https://github.com/BRL-CAD/flex
+# flexbison/winflexbison = https://github.com/BRL-CAD/winflexbison
+# fmt/fmt = https://github.com/BRL-CAD/fmt
+# gdal/gdal = https://github.com/BRL-CAD/gdal
+# gte/GeometricTools = https://github.com/BRL-CAD/GeometricTools
+# icu/icu = https://github.com/BRL-CAD/icu
+# ispc/ispc = https://github.com/BRL-CAD/ispc
+# itk/itk = https://github.com/BRL-CAD/itk
+# iwidgets/iwidgets = https://github.com/BRL-CAD/iwidgets
+# jpeg/libjpeg-turbo = https://github.com/BRL-CAD/libjpeg-turbo
+# lemon/lemon = https://github.com/BRL-CAD/lemon
+# lief/LIEF = https://github.com/BRL-CAD/LIEF
+# llvm/llvm-project = https://github.com/BRL-CAD/llvm-project
+# lmdb/lmdb = https://github.com/BRL-CAD/lmdb
+# lz4/lz4 = https://github.com/BRL-CAD/lz4
+# manifold/manifold = https://github.com/BRL-CAD/manifold.git
+# minizip-ng/minizip-ng = https://github.com/BRL-CAD/minizip-ng
+# mmesh/mmesh = https://github.com/BRL-CAD/mmesh.git
+# ncurses/ncurses = https://github.com/BRL-CAD/ncurses
+# netpbm/netpbm = https://github.com/BRL-CAD/netpbm
+# oidn/oidn = https://github.com/BRL-CAD/oidn
+# onetbb/oneTBB = https://github.com/BRL-CAD/oneTBB
+# opencolorio/OpenColorIO = https://github.com/BRL-CAD/OpenColorIO
+# opencv/opencv = https://github.com/BRL-CAD/opencv
+# openexr/openexr = https://github.com/BRL-CAD/openexr
+# openimageio/oiio = https://github.com/BRL-CAD/oiio
+# opennurbs/opennurbs = https://github.com/BRL-CAD/opennurbs
+# openvdb/openvdb = https://github.com/BRL-CAD/openvdb
+# osl/OpenShadingLanguage = https://github.com/BRL-CAD/OpenShadingLanguage
+# osmesa/osmesa = https://github.com/BRL-CAD/osmesa
+# ospray/ospray = https://github.com/BRL-CAD/ospray
+# patch/patch = https://github.com/BRL-CAD/patch
+# perplex/perplex = https://github.com/BRL-CAD/perplex
+# plief/plief = https://github.com/BRL-CAD/plief
+# png/libpng = https://github.com/BRL-CAD/libpng
+# poissonrecon/PoissonRecon = https://github.com/BRL-CAD/PoissonRecon
+# proj/PROJ = https://github.com/BRL-CAD/PROJ
+# pugixml/pugixml = https://github.com/BRL-CAD/pugixml
+# pystring/pystring = https://github.com/BRL-CAD/pystring
+# qt/qt = https://github.com/BRL-CAD/qt
+# re2c/re2c = https://github.com/BRL-CAD/re2c
+# regex/regex = https://github.com/BRL-CAD/regex
+# rkcommon/rkcommon = https://github.com/BRL-CAD/rkcommon
+# sqlite3/sqlite3 = https://github.com/BRL-CAD/sqlite3.git
+# stepcode/stepcode = https://github.com/BRL-CAD/stepcode
+# strclear/strclear = https://github.com/BRL-CAD/strclear
+# tcl/tcl = https://github.com/BRL-CAD/tcl.git
+# tiff/libtiff = https://github.com/BRL-CAD/libtiff
+# tinygltf/tinygltf = https://github.com/BRL-CAD/tinygltf.git
+# tk/tk = https://github.com/BRL-CAD/tk
+# tkhtml/tkhtml = https://github.com/BRL-CAD/tkhtml
+# tktable/tktable = https://github.com/BRL-CAD/tktable
+# xerces-c/xerces-c = https://github.com/BRL-CAD/xerces-c
+# yaml-cpp/yaml-cpp = https://github.com/BRL-CAD/yaml-cpp
+# zlib/zlib = https://github.com/BRL-CAD/zlib
+# zstd/zstd = https://github.com/BRL-CAD/zstd
+
+[urls]
+# Optional URL-prefix rules also reach recursive submodules.
+# Preserve trailing slashes when replacing directory prefixes.
+# https://github.com/BRL-CAD/ = https://mirror.example.org/brlcad/
+# https://other.example.org/vendor/ = ../mirrors/vendor/
