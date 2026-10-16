@@ -45,6 +45,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # versions.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
 
+# While Github is unusable, use our upstream mapping file by default.
+if(NOT DEFINED BEXT_GIT_REMAP)
+  set(BEXT_GIT_REMAP ${PROJECT_SOURCE_DIR}/CMake/BextGitRemapUpstream.txt)
+endif()
+
 #------------------------------------------------------------------------------
 # To match the BRL-CAD configurations, limit bext builds to a single type
 
