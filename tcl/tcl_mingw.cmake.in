@@ -1,0 +1,19 @@
+include("@BEXT_MINGW_ENV@")
+if (BEXT_ACTION STREQUAL "configure")
+  bext_mingw_run("@TCL_BIN_DIR@" "@TCL_SRC_DIR@/win/configure" ${BEXT_MINGW_CONFIGURE_ARGS})
+elseif (BEXT_ACTION STREQUAL "build")
+  bext_mingw_make("@TCL_BIN_DIR@" 1 genstubs)
+  bext_mingw_make("@TCL_BIN_DIR@" "@pcnt@" all)
+elseif (BEXT_ACTION STREQUAL "install")
+  bext_mingw_make("@TCL_BIN_DIR@" 1 install)
+  foreach(path "@BIN_DIR@/tclsh86.exe" "@BIN_DIR@/tcl86.dll"
+      "@LIB_DIR@/libtcl86.dll.a" "@LIB_DIR@/libtclstub86.a"
+      "@LIB_DIR@/tclConfig.sh" "@LIB_DIR@/itcl@BEXT_ITCL_BUNDLED_VERSION@/pkgIndex.tcl"
+      "@LIB_DIR@/itcl@BEXT_ITCL_BUNDLED_VERSION@/itclConfig.sh")
+    if (NOT EXISTS "@CMAKE_BUNDLE_INSTALL_PREFIX@/${path}")
+      message(FATAL_ERROR "The target Tcl installation is missing ${path}")
+    endif ()
+  endforeach ()
+else ()
+  message(FATAL_ERROR "Unknown Tcl cross-build action: ${BEXT_ACTION}")
+endif ()

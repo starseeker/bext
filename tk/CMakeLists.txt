@@ -55,6 +55,13 @@ endif ()
 
 if (TK_DO_BUILD)
 
+  set(TK_MINGW_CROSS OFF)
+  if (CMAKE_CROSSCOMPILING AND WIN32 AND NOT MSVC AND NOT CMAKE_HOST_WIN32)
+    set(TK_MINGW_CROSS ON)
+    include("${CMAKE_SOURCE_DIR}/CMake/BextMingw.cmake")
+    bext_mingw_context()
+  endif ()
+
   git_submodule_init(tk unix/configure)
 
   RegisterDeps(TK)
@@ -154,7 +161,26 @@ if (TK_DO_BUILD)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tk_build.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/tk_build.cmake @ONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tk_install.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/tk_install.cmake @ONLY)
 
-  if (NOT MSVC)
+  if (TK_MINGW_CROSS)
+    configure_file(tk_mingw.cmake.in tk_mingw.cmake @ONLY)
+    ExternalProject_Add(TK_BLD
+      ${TK_SOURCE_ARGUMENTS}
+      BINARY_DIR "${TK_BIN_DIR}"
+      BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+      PATCH_COMMAND ${TK_PATCH_COMMAND}
+      CONFIGURE_COMMAND ${CMAKE_COMMAND} -DBEXT_ACTION=configure -P ${CMAKE_CURRENT_BINARY_DIR}/tk_mingw.cmake
+      BUILD_COMMAND ${CMAKE_COMMAND} -DBEXT_ACTION=build -P ${CMAKE_CURRENT_BINARY_DIR}/tk_mingw.cmake
+      INSTALL_COMMAND ${CMAKE_COMMAND} -DBEXT_ACTION=install -P ${CMAKE_CURRENT_BINARY_DIR}/tk_mingw.cmake
+      LOG_CONFIGURE ${EXT_BUILD_QUIET} LOG_BUILD ${EXT_BUILD_QUIET}
+      LOG_INSTALL ${EXT_BUILD_QUIET} LOG_OUTPUT_ON_FAILURE ${EXT_BUILD_QUIET}
+      STEP_TARGETS install)
+    if (BEXT_HOST_TCL_TARGET)
+      ExternalProject_Add_StepDependencies(TK_BLD configure ${BEXT_HOST_TCL_TARGET})
+    endif ()
+    ExternalProject_Add_StepDependencies(TK_BLD configure ${BEXT_MINGW_INPUTS}
+      "${CMAKE_CURRENT_BINARY_DIR}/tk_mingw.cmake")
+    set(TK_APPINIT)
+  elseif (NOT MSVC)
 
     # Check for spaces in the source and build directories - those won't work
     # reliably with the Tk autotools based build.
@@ -186,7 +212,7 @@ if (TK_DO_BUILD)
 
     set(TK_APPINIT tkAppInit.c)
 
-  else (NOT MSVC)
+  else ()
 
     ExternalProject_Add(TK_BLD
       ${TK_SOURCE_ARGUMENTS}
@@ -204,26 +230,20 @@ if (TK_DO_BUILD)
 
     set(TK_APPINIT)
 
-  endif (NOT MSVC)
+  endif ()
 
   # The library file permissions end up a bit strange - fix them
   find_program(CHMOD_EXECUTABLE chmod)
   mark_as_advanced(CHMOD_EXECUTABLE)
-  if (CHMOD_EXECUTABLE)
-    if (MSVC)
-      set(LIB_PREFIX)
-      set(SHARED_DIR ${BIN_DIR})
-      set(TCL_VERSION "86")
-    else (MSVC)
-      set(LIB_PREFIX "lib")
-      set(SHARED_DIR ${LIB_DIR})
-    endif (MSVC)
+  if (CHMOD_EXECUTABLE AND NOT WIN32)
+    set(LIB_PREFIX "lib")
+    set(SHARED_DIR ${LIB_DIR})
     add_custom_target(tk_permissionsfix ALL
       COMMAND ${CHMOD_EXECUTABLE} a-x,u+w ${CMAKE_BUNDLE_INSTALL_PREFIX}/${SHARED_DIR}/${LIB_PREFIX}tk${TCL_VERSION}${CMAKE_SHARED_LIBRARY_SUFFIX}
       COMMAND ${CHMOD_EXECUTABLE} a-x,u+w ${CMAKE_BUNDLE_INSTALL_PREFIX}/${LIB_DIR}/${LIB_PREFIX}tkstub${TCL_VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX}
       DEPENDS TK_BLD-install
       )
-  endif (CHMOD_EXECUTABLE)
+  endif ()
 
   TargetInstallDeps(TK TK_DEPENDS)
 

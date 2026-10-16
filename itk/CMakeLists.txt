@@ -59,9 +59,24 @@ if (ENABLE_ITK)
     "-DITK_PATCH_FILE=${CMAKE_CURRENT_SOURCE_DIR}/itk.patch"
     "-DITK_INSTALL_PATCH_FILE=${CMAKE_CURRENT_SOURCE_DIR}/itk_install.patch"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/itk_apply_patch.cmake"
+    COMMAND ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS}
+      -i "${CMAKE_CURRENT_SOURCE_DIR}/itk_stubs.patch"
     )
 
   if (NOT MSVC)
+    set(ITK_CONFIGURE_COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/itk_configure.cmake)
+    set(ITK_BUILD_COMMAND ${BEXT_MAKE_COMMAND} -j${pcnt})
+    set(ITK_INSTALL_COMMAND ${BEXT_MAKE_COMMAND} -j1 INSTALL_OPTIONS=-C install)
+    if (CMAKE_CROSSCOMPILING AND WIN32 AND NOT CMAKE_HOST_WIN32)
+      include("${CMAKE_SOURCE_DIR}/CMake/BextMingw.cmake")
+      bext_mingw_context()
+      list(APPEND ITK_PATCH_COMMAND COMMAND ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS}
+        -i ${CMAKE_CURRENT_SOURCE_DIR}/itk_mingw.patch)
+      configure_file(itk_mingw.cmake.in itk_mingw.cmake @ONLY)
+      set(ITK_CONFIGURE_COMMAND ${CMAKE_COMMAND} -DBEXT_ACTION=configure -P ${CMAKE_CURRENT_BINARY_DIR}/itk_mingw.cmake)
+      set(ITK_BUILD_COMMAND ${CMAKE_COMMAND} -DBEXT_ACTION=build -P ${CMAKE_CURRENT_BINARY_DIR}/itk_mingw.cmake)
+      set(ITK_INSTALL_COMMAND ${CMAKE_COMMAND} -DBEXT_ACTION=install -P ${CMAKE_CURRENT_BINARY_DIR}/itk_mingw.cmake)
+    endif ()
     ExternalProject_Add(ITK_BLD
       URL "${CMAKE_CURRENT_SOURCE_DIR}/itk"
       BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
@@ -69,15 +84,22 @@ if (ENABLE_ITK)
       COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/manifest.uuid <SOURCE_DIR>/manifest.uuid
       COMMAND ${CMAKE_COMMAND} -E make_directory <SOURCE_DIR>/tclconfig
       COMMAND ${CMAKE_COMMAND} -E copy ${BEXT_ITCL_BUNDLED_SOURCE_DIR}/tclconfig/install-sh <SOURCE_DIR>/tclconfig/install-sh
-      CONFIGURE_COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/itk_configure.cmake
-      BUILD_COMMAND ${BEXT_MAKE_COMMAND} -j${pcnt}
-      INSTALL_COMMAND ${BEXT_MAKE_COMMAND} -j1 INSTALL_OPTIONS=-C install
+      CONFIGURE_COMMAND ${ITK_CONFIGURE_COMMAND}
+      BUILD_COMMAND ${ITK_BUILD_COMMAND}
+      INSTALL_COMMAND ${ITK_INSTALL_COMMAND}
       LOG_CONFIGURE ${EXT_BUILD_QUIET}
       LOG_BUILD ${EXT_BUILD_QUIET}
       LOG_INSTALL ${EXT_BUILD_QUIET}
       LOG_OUTPUT_ON_FAILURE ${EXT_BUILD_QUIET}
       STEP_TARGETS install
       )
+    if (CMAKE_CROSSCOMPILING AND WIN32 AND NOT CMAKE_HOST_WIN32)
+      ExternalProject_Add_StepDependencies(ITK_BLD configure ${BEXT_MINGW_INPUTS}
+        "${CMAKE_CURRENT_BINARY_DIR}/itk_mingw.cmake")
+      if (BEXT_HOST_TCL_TARGET)
+        ExternalProject_Add_StepDependencies(ITK_BLD configure ${BEXT_HOST_TCL_TARGET})
+      endif ()
+    endif ()
   else (NOT MSVC)
     # Itk's rules.vc is newer than Tcl 8.6's, so rules-ext.vc selects the
     # local nmake support files.  Upstream omits the matching targets.vc;
@@ -100,6 +122,15 @@ if (ENABLE_ITK)
       STEP_TARGETS install
       )
   endif (NOT MSVC)
+
+  # itk.h includes this declarations header, but upstream's Unix and Windows
+  # install lists omit it.  Complete the installed public interface before
+  # releasing the install prerequisite to consumers.
+  ExternalProject_Add_Step(ITK_BLD install-stub-header
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BUNDLE_INSTALL_PREFIX}/${INCLUDE_DIR}"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${ITK_SRC_DIR}/generic/itkDecls.h" "${CMAKE_BUNDLE_INSTALL_PREFIX}/${INCLUDE_DIR}/itkDecls.h"
+    DEPENDEES build DEPENDERS install)
 
   TargetInstallDeps(ITK ITK_DEPENDS)
 

@@ -119,6 +119,16 @@ set(DISABLE_TCL "${DISABLE_TCL}" CACHE BOOL "Disable tcl build")
 
 if (ENABLE_TCL)
 
+  set(TCL_MINGW_CROSS OFF)
+  if (CMAKE_CROSSCOMPILING AND WIN32 AND NOT MSVC AND NOT CMAKE_HOST_WIN32)
+    set(TCL_MINGW_CROSS ON)
+    if (NOT TARGET ZLIB_BLD)
+      message(FATAL_ERROR "The Windows Tcl cross build requires bundled zlib (ENABLE_ZLIB=ON)")
+    endif ()
+    include("${CMAKE_SOURCE_DIR}/CMake/BextMingw.cmake")
+    bext_mingw_context()
+  endif ()
+
   git_submodule_init(tcl unix/configure)
   if (NOT EXISTS "${BEXT_ITCL_BUNDLED_SOURCE_DIR}/configure")
     message(FATAL_ERROR
@@ -156,6 +166,9 @@ if (ENABLE_TCL)
   endif ()
   list(APPEND TCL_PATCH_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/tcl_disable_docs.patch")
+  if (TCL_MINGW_CROSS)
+    list(APPEND TCL_PATCH_FILES "${CMAKE_CURRENT_SOURCE_DIR}/tcl_mingw.patch")
+  endif ()
 
   set(TCL_PATCH_COMMAND)
   foreach(TCL_PATCH_FILE IN LISTS TCL_PATCH_FILES)
@@ -173,12 +186,14 @@ if (ENABLE_TCL)
   unset(TCL_PATCH_FILE)
   unset(TCL_PATCH_FILES)
 
-  if (TARGET ZLIB_BLD)
+  if (TCL_MINGW_CROSS)
+    set(ZLIB_SETUP_COMMANDS ${CMAKE_COMMAND};-E;remove_directory;<SOURCE_DIR>/compat/zlib)
+  elseif (TARGET ZLIB_BLD)
     set(ZLIB_SETUP_COMMANDS
       ${PATCH_EXECUTABLE};-E;-p1;${PATCH_OPTIONS};-i;${CMAKE_CURRENT_SOURCE_DIR}/tcl-z_brl.patch
       COMMAND ${CMAKE_COMMAND};-E;remove_directory;<SOURCE_DIR>/compat/zlib
       )
-  endif (TARGET ZLIB_BLD)
+  endif ()
 
   # Give tclsh a loader-relative search path at link time.  Keep this override
   # specific to tclsh: extensions are installed below lib and need their normal
@@ -248,7 +263,27 @@ if (ENABLE_TCL)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tcl_build.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/tcl_build.cmake @ONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tcl_install.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/tcl_install.cmake @ONLY)
 
-  if (NOT MSVC)
+  if (TCL_MINGW_CROSS)
+    configure_file(tcl_mingw.cmake.in tcl_mingw.cmake @ONLY)
+    ExternalProject_Add(TCL_BLD
+      URL "${CMAKE_CURRENT_SOURCE_DIR}/tcl"
+      BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+      PATCH_COMMAND ${TCL_PATCH_COMMAND}
+      COMMAND ${ZLIB_SETUP_COMMANDS}
+      COMMAND ${CMAKE_COMMAND} "-DTCL_SOURCE_DIR=<SOURCE_DIR>" -P ${CMAKE_CURRENT_SOURCE_DIR}/prepare_mingw.cmake
+      CONFIGURE_COMMAND ${CMAKE_COMMAND} -DBEXT_ACTION=configure -P ${CMAKE_CURRENT_BINARY_DIR}/tcl_mingw.cmake
+      BUILD_COMMAND ${CMAKE_COMMAND} -DBEXT_ACTION=build -P ${CMAKE_CURRENT_BINARY_DIR}/tcl_mingw.cmake
+      INSTALL_COMMAND ${CMAKE_COMMAND} -DBEXT_ACTION=install -P ${CMAKE_CURRENT_BINARY_DIR}/tcl_mingw.cmake
+      LOG_CONFIGURE ${EXT_BUILD_QUIET} LOG_BUILD ${EXT_BUILD_QUIET}
+      LOG_INSTALL ${EXT_BUILD_QUIET} LOG_OUTPUT_ON_FAILURE ${EXT_BUILD_QUIET}
+      STEP_TARGETS install)
+    if (BEXT_HOST_TCL_TARGET)
+      ExternalProject_Add_StepDependencies(TCL_BLD configure ${BEXT_HOST_TCL_TARGET})
+    endif ()
+    ExternalProject_Add_StepDependencies(TCL_BLD configure ${BEXT_MINGW_INPUTS}
+      "${CMAKE_CURRENT_BINARY_DIR}/tcl_mingw.cmake")
+    set(TCL_APPINIT)
+  elseif (NOT MSVC)
 
     # Check for spaces in the source and build directories - those won't work
     # reliably with the Tcl autotools based build.
@@ -282,7 +317,7 @@ if (ENABLE_TCL)
 
     set(TCL_APPINIT tclAppInit.c)
 
-  else (NOT MSVC)
+  else ()
 
     # TODO - how to pass Z_PREFIX through nmake so zlib.h has the correct
     # prefix?  Is https://stackoverflow.com/a/11041834 what we need?  Also, do
@@ -308,42 +343,36 @@ if (ENABLE_TCL)
       )
     set(TCL_APPINIT)
 
-  endif (NOT MSVC)
+  endif ()
 
   TargetInstallDeps(TCL TCL_DEPENDS)
 
   # Scripts expect a non-versioned tclsh program, but the Tcl build doesn't provide one,
   # we must provide it ourselves
-  if (MSVC)
+  if (WIN32)
     add_custom_target(tclsh_cpy ALL
       COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BUNDLE_INSTALL_PREFIX}/${BIN_DIR}/tclsh${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION}${CMAKE_EXECUTABLE_SUFFIX} ${CMAKE_BUNDLE_INSTALL_PREFIX}/${BIN_DIR}/tclsh${CMAKE_EXECUTABLE_SUFFIX}
       DEPENDS TCL_BLD-install
       )
-  else (MSVC)
+  else ()
     add_custom_target(tclsh_cpy ALL
       COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_BUNDLE_INSTALL_PREFIX}/${BIN_DIR}/tclsh${TCL_VERSION}${CMAKE_EXECUTABLE_SUFFIX} ${CMAKE_BUNDLE_INSTALL_PREFIX}/${BIN_DIR}/tclsh${CMAKE_EXECUTABLE_SUFFIX}
       DEPENDS TCL_BLD-install
       )
-  endif (MSVC)
+  endif ()
 
   # The library file permissions end up a bit strange - fix them
   find_program(CHMOD_EXECUTABLE chmod)
   mark_as_advanced(CHMOD_EXECUTABLE)
-  if (CHMOD_EXECUTABLE)
-    if (MSVC)
-      set(LIB_PREFIX)
-      set(SHARED_DIR ${BIN_DIR})
-      set(TCL_VERSION "${TCL_MAJOR_VERSION}${TCL_MINOR_VERSION}")
-    else (MSVC)
-      set(LIB_PREFIX "lib")
-      set(SHARED_DIR ${LIB_DIR})
-    endif (MSVC)
+  if (CHMOD_EXECUTABLE AND NOT WIN32)
+    set(LIB_PREFIX "lib")
+    set(SHARED_DIR ${LIB_DIR})
     add_custom_target(tcl_permissionsfix ALL
       COMMAND ${CHMOD_EXECUTABLE} a-x,u+w ${CMAKE_BUNDLE_INSTALL_PREFIX}/${SHARED_DIR}/${LIB_PREFIX}tcl${TCL_VERSION}${CMAKE_SHARED_LIBRARY_SUFFIX}
       COMMAND ${CHMOD_EXECUTABLE} a-x,u+w ${CMAKE_BUNDLE_INSTALL_PREFIX}/${LIB_DIR}/${LIB_PREFIX}tclstub${TCL_VERSION}${CMAKE_STATIC_LIBRARY_SUFFIX}
       DEPENDS TCL_BLD-install
       )
-  endif (CHMOD_EXECUTABLE)
+  endif ()
 
   # Copy the license into position in CMAKE_BUNDLE_INSTALL_PREFIX
   configure_file(

@@ -1,0 +1,11 @@
+include("@BEXT_MINGW_ENV@")
+if (BEXT_ACTION STREQUAL "configure")
+  bext_mingw_run("@TK_BIN_DIR@" "@TK_SRC_DIR@/win/configure" ${BEXT_MINGW_CONFIGURE_ARGS}
+    "--with-tcl=@WITH_TCL_DIR@" @TK_CONFIGURE_ARGS@)
+elseif (BEXT_ACTION STREQUAL "build")
+  bext_mingw_make("@TK_BIN_DIR@" "@pcnt@" all)
+elseif (BEXT_ACTION STREQUAL "install")
+  bext_mingw_make("@TK_BIN_DIR@" 1 install)
+else ()
+  message(FATAL_ERROR "Unknown Tk cross-build action: ${BEXT_ACTION}")
+endif ()
