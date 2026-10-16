@@ -64,12 +64,12 @@ set(LEMON_NAMES lemon)
 
 # Try each search configuration.
 foreach(search ${_LEMON_SEARCHES})
-  find_program(LEMON_EXECUTABLE lemon ${${search}} PATH_SUFFIXES bin)
+  find_program(LEMON_EXECUTABLE lemon ${${search}} PATH_SUFFIXES bin NO_CMAKE_FIND_ROOT_PATH)
 endforeach()
 mark_as_advanced(LEMON_EXECUTABLE)
 
 foreach(search ${_LEMON_SEARCHES})
-  find_file(LEMON_TEMPLATE lempar.c ${${search}} PATH_SUFFIXES ${DATA_DIR} ${DATA_DIR}/lemon)
+  find_file(LEMON_TEMPLATE lempar.c ${${search}} PATH_SUFFIXES ${DATA_DIR} ${DATA_DIR}/lemon NO_CMAKE_FIND_ROOT_PATH)
 endforeach()
 mark_as_advanced(LEMON_TEMPLATE)
 

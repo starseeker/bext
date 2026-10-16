@@ -23,7 +23,7 @@ set(RE2C_NAMES re2c)
 
 # Try each search configuration.
 foreach(search ${_RE2C_SEARCHES})
-  find_program(RE2C_EXECUTABLE re2c ${${search}} PATH_SUFFIXES bin)
+  find_program(RE2C_EXECUTABLE re2c ${${search}} PATH_SUFFIXES bin NO_CMAKE_FIND_ROOT_PATH)
 endforeach()
 
 mark_as_advanced(RE2C_EXECUTABLE)

@@ -64,12 +64,12 @@ set(PERPLEX_NAMES perplex)
 
 # Try each search configuration.
 foreach(search ${_PERPLEX_SEARCHES})
-  find_program(PERPLEX_EXECUTABLE perplex ${${search}} PATH_SUFFIXES bin)
+  find_program(PERPLEX_EXECUTABLE perplex ${${search}} PATH_SUFFIXES bin NO_CMAKE_FIND_ROOT_PATH)
 endforeach()
 mark_as_advanced(PERPLEX_EXECUTABLE)
 
 foreach(search ${_PERPLEX_SEARCHES})
-  find_file(PERPLEX_TEMPLATE perplex_template.c ${${search}} PATH_SUFFIXES ${DATA_DIR} ${DATA_DIR}/perplex)
+  find_file(PERPLEX_TEMPLATE perplex_template.c ${${search}} PATH_SUFFIXES ${DATA_DIR} ${DATA_DIR}/perplex NO_CMAKE_FIND_ROOT_PATH)
 endforeach()
 mark_as_advanced(PERPLEX_TEMPLATE)
 

@@ -3,8 +3,13 @@
 
 # plief currently uses LIEF only for ELF processing.  Windows needs no RPATH
 # rewriting, and macOS uses the native otool/install_name_tool workflow.
-if (NOT MSVC AND NOT APPLE)
+if (NOT BEXT_HOST_MSVC AND NOT CMAKE_HOST_APPLE)
 
+  # LIEF is linked into a native utility.  A target package discovered by the
+  # cross toolchain cannot satisfy that dependency.
+  if (CMAKE_CROSSCOMPILING AND NOT DEFINED ENABLE_LIEF)
+    set(ENABLE_LIEF ON)
+  endif ()
   bext_enable(LIEF)
 
   if (ENABLE_LIEF)
@@ -21,6 +26,7 @@ if (NOT MSVC AND NOT APPLE)
     RegisterDeps(LIEF)
 
     ExternalProject_Add(LIEF_BLD
+      BEXT_BUILD_ROLE HOST
       URL "${CMAKE_CURRENT_SOURCE_DIR}/LIEF"
       BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
       PATCH_COMMAND ${LIEF_PATCH_COMMAND}
@@ -32,11 +38,11 @@ if (NOT MSVC AND NOT APPLE)
       -DBIN_DIR=${BIN_DIR}
       -DLIB_DIR=${LIB_DIR}
       -DBUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}
-      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      -DCMAKE_INSTALL_PREFIX=${CMAKE_NOBUNDLE_INSTALL_PREFIX}
+      -DCMAKE_CXX_COMPILER=${BEXT_HOST_CXX_COMPILER}
+      -DCMAKE_C_COMPILER=${BEXT_HOST_C_COMPILER}
+      -DCMAKE_INSTALL_PREFIX=${BEXT_HOST_INSTALL_PREFIX}
       -DCMAKE_INSTALL_LIBDIR:PATH=${LIB_DIR}
-      -DCMAKE_INSTALL_RPATH=${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${LIB_DIR}
+      -DCMAKE_INSTALL_RPATH=${BEXT_HOST_INSTALL_PREFIX}/${LIB_DIR}
       -DLIEF_USE_CCACHE=OFF
       -DLIEF_ART=OFF
       -DLIEF_ASAN=OFF
@@ -67,7 +73,7 @@ if (NOT MSVC AND NOT APPLE)
     TargetInstallDeps(LIEF LIEF_DEPENDS)
 
   endif (ENABLE_LIEF)
-endif (NOT MSVC AND NOT APPLE)
+endif (NOT BEXT_HOST_MSVC AND NOT CMAKE_HOST_APPLE)
 
 # Local Variables:
 # tab-width: 8

@@ -183,6 +183,12 @@ include(ExternalProject)
 # Do not replace URL with SOURCE_DIR merely to avoid the local URL spelling;
 # that can cause patches or generated-file changes to modify the checkout.
 
+# Forward the complete target toolchain to CMake sub-builds, and configure
+# native tools independently when the target platform differs from the host.
+include("${CMAKE_CURRENT_SOURCE_DIR}/CMake/BextBuildContexts.cmake")
+bext_initialize_build_contexts()
+include("${CMAKE_CURRENT_SOURCE_DIR}/CMake/BextExternalProject.cmake")
+
 # In case we need to pass some sort of reasonable parallel
 # flag to a build system, check our processor count
 include(ProcessorCount)
@@ -231,7 +237,7 @@ endif (NOT isMultiConfig)
 # as Git Bash can reorder PATH while leaving Visual Studio's environment markers
 # intact.  The wrappers also put the selected compiler's directory first so a
 # POSIX utility named link cannot shadow MSVC's link.exe.
-if(MSVC)
+if(MSVC AND CMAKE_HOST_WIN32)
 
   if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(BEXT_MSVC_TARGET_ARCH x64)
@@ -260,7 +266,7 @@ if(MSVC)
     endif(NOT EXISTS "${VCVARS_BAT}")
   endif(NOT EXISTS "${VCVARS_BAT}")
 
-endif(MSVC)
+endif(MSVC AND CMAKE_HOST_WIN32)
 
 # If configurations change after a build has been performed, we don't
 # automatically scrub a pre-existing output directory to remove the files from
@@ -670,22 +676,22 @@ add_project(ospray GROUPS "OSPRAY")
 # during every configure pass.
 ###############################################################################
 set(BEXT_STRCLEAR_EXPECTED
-  "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}/strclear${CMAKE_EXECUTABLE_SUFFIX}")
+  "${BEXT_HOST_INSTALL_PREFIX}/${BIN_DIR}/strclear${BEXT_HOST_EXECUTABLE_SUFFIX}")
 if (TARGET STRCLEAR_BLD)
   set(BEXT_STRCLEAR_EXECUTABLE "${BEXT_STRCLEAR_EXPECTED}")
 else ()
-  find_program(BEXT_STRCLEAR_EXECUTABLE NAMES strclear HINTS "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}")
+  bext_find_host_program(BEXT_STRCLEAR_EXECUTABLE NAMES strclear HINTS "${BEXT_HOST_INSTALL_PREFIX}/${BIN_DIR}")
 endif ()
 if (NOT BEXT_STRCLEAR_EXECUTABLE)
   message(FATAL_ERROR "bext finalization requires strclear")
 endif ()
 
 set(BEXT_PLIEF_EXPECTED
-  "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}/plief${CMAKE_EXECUTABLE_SUFFIX}")
+  "${BEXT_HOST_INSTALL_PREFIX}/${BIN_DIR}/plief${BEXT_HOST_EXECUTABLE_SUFFIX}")
 if (TARGET PLIEF_BLD)
   set(BEXT_PLIEF_EXECUTABLE "${BEXT_PLIEF_EXPECTED}")
 else ()
-  find_program(BEXT_PLIEF_EXECUTABLE NAMES plief patchelf HINTS "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}")
+  bext_find_host_program(BEXT_PLIEF_EXECUTABLE NAMES plief patchelf HINTS "${BEXT_HOST_INSTALL_PREFIX}/${BIN_DIR}")
 endif ()
 
 configure_file("${CMAKE_SOURCE_DIR}/CMake/RefreshSpdx.cmake"

@@ -252,6 +252,30 @@ function(bext_local_source pname path url revision)
   set(ENABLE_${pname} ${enabled} PARENT_SCOPE)
 endfunction()
 
+# These packages describe native generators and their data files.  Isolate
+# their discovery from target prefixes, including CMAKE_PREFIX_PATH in the
+# environment, without changing the target platform in the parent directory.
+function(bext_find_host_package pname)
+  set(CMAKE_FIND_ROOT_PATH "")
+  set(CMAKE_SYSROOT "")
+  foreach(kind PROGRAM LIBRARY INCLUDE PACKAGE)
+    set(CMAKE_FIND_ROOT_PATH_MODE_${kind} NEVER)
+  endforeach ()
+  set(CMAKE_PREFIX_PATH "${BEXT_HOST_INSTALL_PREFIX};${BEXT_HOST_PREFIX_PATH}")
+  set(CMAKE_INSTALL_PREFIX "${BEXT_HOST_INSTALL_PREFIX}")
+  set(CMAKE_STAGING_PREFIX "")
+  set(CMAKE_PROGRAM_PATH "")
+  set(CMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH FALSE)
+  find_package(${pname} QUIET)
+  string(TOUPPER "${pname}" upname)
+  get_cmake_property(package_vars VARIABLES)
+  foreach(var IN LISTS package_vars)
+    if (var MATCHES "^(${pname}|${upname})_")
+      set(${var} "${${var}}" PARENT_SCOPE)
+    endif ()
+  endforeach ()
+endfunction()
+
 macro(bext_enable pname)
   string(TOUPPER "${pname}" upname)
   #string(TOLOWER "${pname}" lpname)
@@ -268,7 +292,11 @@ macro(bext_enable pname)
       # path that simply turns on the local build below, and the configure
       # summary already reports which packages are built locally vs. found on
       # the system. QUIET avoids verbose warnings for missing system packages.
-      find_package(${pname} QUIET)
+      if ("${ARGV1}" STREQUAL "HOST" AND CMAKE_CROSSCOMPILING)
+        bext_find_host_package(${pname})
+      else ()
+        find_package(${pname} QUIET)
+      endif ()
 
       if (NOT ${pname}_FOUND AND NOT DEFINED ENABLE_${upname})
         set(ENABLE_${upname} "ON" CACHE BOOL "Enable ${pname} build")
@@ -377,6 +405,7 @@ function(bext_print_configure_summary)
   message(STATUS "  skipped because group inactive: ${skipped_projects_str}")
   message(STATUS "  bundled output root: ${CMAKE_BUNDLE_INSTALL_PREFIX}")
   message(STATUS "  noinstall output root: ${CMAKE_NOBUNDLE_INSTALL_PREFIX}")
+  message(STATUS "  native tool output root: ${BEXT_HOST_INSTALL_PREFIX}")
   message(STATUS "")
 endfunction(bext_print_configure_summary)
 
