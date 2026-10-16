@@ -1,0 +1,14 @@
+include("@BEXT_MINGW_ENV@")
+if (BEXT_ACTION STREQUAL "configure")
+  bext_mingw_run("@ITK_BIN_DIR@" "@ITK_SRC_DIR@/configure" ${BEXT_MINGW_CONFIGURE_ARGS}
+    "--with-tcl=@WITH_TCL_DIR@" "--with-tk=@WITH_TK_DIR@"
+    "--with-itcl=@WITH_ITCL_DIR@"
+    "--with-tclinclude=@WITH_TCL_INCLUDE_DIR@"
+    "--with-tkinclude=@WITH_TK_INCLUDE_DIR@")
+elseif (BEXT_ACTION STREQUAL "build")
+  bext_mingw_make("@ITK_BIN_DIR@" "@pcnt@" all)
+elseif (BEXT_ACTION STREQUAL "install")
+  bext_mingw_make("@ITK_BIN_DIR@" 1 INSTALL_OPTIONS=-C install)
+else ()
+  message(FATAL_ERROR "Unknown Itk cross-build action: ${BEXT_ACTION}")
+endif ()

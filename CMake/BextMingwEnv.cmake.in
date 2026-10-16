@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.26)
+# Both configure and make run in this environment, including recursive TEA
+# package configures.  Never inherit native include/library/pkg-config roots.
+foreach(v CC CXX CPP CFLAGS CXXFLAGS CPPFLAGS LDFLAGS AR RANLIB RC LD STRIP
+    CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH
+    PKG_CONFIG_PATH PKG_CONFIG_LIBDIR PKG_CONFIG_SYSROOT_DIR CONFIG_SITE
+    TCL_LIBRARY TCLLIBPATH TK_LIBRARY ITCL_LIBRARY ITK_LIBRARY
+    MAKEFLAGS MFLAGS)
+  unset(ENV{${v}})
+endforeach ()
+set(ENV{CC} [==[@BEXT_MINGW_TOOLS@/C]==])
+set(ENV{CXX} [==[@BEXT_MINGW_TOOLS@/CXX]==])
+set(ENV{RC} [==[@BEXT_MINGW_TOOLS@/windres]==])
+set(ENV{AR} [==[@CMAKE_AR@]==])
+set(ENV{RANLIB} [==[@CMAKE_RANLIB@]==])
+set(ENV{STRIP} [==[@CMAKE_STRIP@]==])
+set(ENV{CFLAGS} [==[@BEXT_MINGW_CFLAGS@]==])
+set(ENV{CXXFLAGS} [==[@BEXT_MINGW_CXXFLAGS@]==])
+set(ENV{CPPFLAGS} [==[-I@CMAKE_BUNDLE_INSTALL_PREFIX@/@INCLUDE_DIR@]==])
+set(ENV{LDFLAGS} [==[@BEXT_MINGW_LDFLAGS@ -L@CMAKE_BUNDLE_INSTALL_PREFIX@/@LIB_DIR@]==])
+set(ENV{PKG_CONFIG_LIBDIR} [==[@CMAKE_BUNDLE_INSTALL_PREFIX@/@LIB_DIR@/pkgconfig]==])
+set(ENV{PATH} "@BEXT_MINGW_TOOLS@:$ENV{PATH}")
+set(BEXT_MINGW_CONFIGURE_ARGS
+  "--build=@BEXT_MINGW_BUILD@" "--host=@BEXT_MINGW_HOST@"
+  "--prefix=@CMAKE_BUNDLE_INSTALL_PREFIX@"
+  "--bindir=@CMAKE_BUNDLE_INSTALL_PREFIX@/@BIN_DIR@"
+  "--libdir=@CMAKE_BUNDLE_INSTALL_PREFIX@/@LIB_DIR@"
+  "--includedir=@CMAKE_BUNDLE_INSTALL_PREFIX@/@INCLUDE_DIR@"
+  @BEXT_MINGW_BITS@ --enable-shared)
+function(bext_mingw_run directory)
+  execute_process(COMMAND ${ARGN} WORKING_DIRECTORY "${directory}" RESULT_VARIABLE result)
+  if (NOT "${result}" STREQUAL "0")
+    message(FATAL_ERROR "Windows cross-build step failed in ${directory}: ${result}")
+  endif ()
+endfunction()
+function(bext_mingw_make directory jobs)
+  bext_mingw_run("${directory}" "@BEXT_MINGW_MAKE@" "-j${jobs}"
+    "TCL_EXE=@BEXT_MINGW_TOOLS@/tclsh"
+    "TCLSH_PROG=@BEXT_MINGW_TOOLS@/tclsh"
+    "NATIVE_TCLSH=@BEXT_MINGW_TOOLS@/tclsh" ${ARGN})
+endfunction()
