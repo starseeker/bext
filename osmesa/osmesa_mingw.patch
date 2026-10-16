@@ -1,0 +1,48 @@
+--- a/src/main/glheader.h
++++ b/src/main/glheader.h
+@@ -60,7 +60,7 @@
+ /* Get typedefs for uintptr_t and friends */
+ #include <stdint.h>
+ #if defined(_WIN32)
+-#  include <BaseTsd.h>
++#  include <basetsd.h>
+ #endif
+ #include <inttypes.h>
+ 
+--- a/src/main/imports.c
++++ b/src/main/imports.c
+@@ -479,7 +479,7 @@
+ int
+ _mesa_ffs(int i)
+ {
+-#if (defined(_WIN32) && !defined(__MINGW32__) ) || defined(__IBMC__) || defined(__IBMCPP__)
++#if defined(_WIN32) || defined(__IBMC__) || defined(__IBMCPP__)
+     register int bit = 0;
+     if (i != 0) {
+ 	if ((i & 0xffff) == 0) {
+@@ -514,11 +514,7 @@
+  *          if no bits set.
+  */
+ int
+-#ifdef __MINGW32__
+-_mesa_ffsll(long val)
+-#else
+ _mesa_ffsll(long long val)
+-#endif
+ {
+ #ifdef ffsll
+     return ffsll(val);
+--- a/src/main/imports.h
++++ b/src/main/imports.h
+@@ -523,11 +523,7 @@
+ _mesa_ffs(int i);
+ 
+ extern int
+-#ifdef __MINGW32__
+-_mesa_ffsll(long i);
+-#else
+ _mesa_ffsll(long long i);
+-#endif
+ 
+ extern unsigned int
+ _mesa_bitcount(unsigned int n);
