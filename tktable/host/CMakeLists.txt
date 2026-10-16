@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.26)
+project(BextTktableGenerator LANGUAGES CXX)
+if (CMAKE_CROSSCOMPILING)
+  message(FATAL_ERROR "tktable_hdr must run on the build host")
+endif ()
+add_executable(tktable_hdr "${TKTABLE_SOURCE_DIR}/tktable_hdr.cxx")
+install(TARGETS tktable_hdr RUNTIME DESTINATION bin)

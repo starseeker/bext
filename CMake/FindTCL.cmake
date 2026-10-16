@@ -32,6 +32,10 @@ TCL_STUB_LIBRARY       = path to Tcl stub library
 TK_STUB_LIBRARY        = path to Tk stub library
 TTK_STUB_LIBRARY       = path to ttk stub library
 
+Cross builds must supply a native TCL_TCLSH and should set
+TCLSH_VERSION_STRING.  Its prefix is not used to locate target libraries;
+TK_WISH is neither discovered nor required while cross compiling.
+
 #]=======================================================================]
 
 
@@ -122,14 +126,18 @@ if(CYGWIN)
   set(TCL_TCLSH_NAMES ${TCL_TCLSH_NAMES} cygtclsh83 cygtclsh80)
 endif(CYGWIN)
 
-foreach(search ${_TCL_SEARCHES})
-  find_program(TCL_TCLSH NAMES ${TCL_TCLSH_NAMES} ${${search}} PATH_SUFFIXES bin)
-endforeach()
-if(NOT TCL_TCLSH)
-  find_program(TCL_TCLSH NAMES ${TCL_TCLSH_NAMES} HINTS ${TCLTK_POSSIBLE_BIN_PATHS})
-endif(NOT TCL_TCLSH)
+if(NOT CMAKE_CROSSCOMPILING)
+  foreach(search ${_TCL_SEARCHES})
+    find_program(TCL_TCLSH NAMES ${TCL_TCLSH_NAMES} ${${search}} PATH_SUFFIXES bin)
+  endforeach()
+  if(NOT TCL_TCLSH)
+    find_program(TCL_TCLSH NAMES ${TCL_TCLSH_NAMES} HINTS ${TCLTK_POSSIBLE_BIN_PATHS})
+  endif()
+endif()
+# Cross-build callers supply a native TCL_TCLSH explicitly.  Its prefix must
+# not become a hint for target libraries, and target wish is not a build tool.
 
-if(TCL_ENABLE_TK)
+if(TCL_ENABLE_TK AND NOT CMAKE_CROSSCOMPILING)
   set(
     TK_WISH_NAMES
     wish
@@ -160,13 +168,15 @@ if(TCL_ENABLE_TK)
   if(NOT TK_WISH)
     find_program(TK_WISH NAMES ${TK_WISH_NAMES} HINTS ${TCLTK_POSSIBLE_BIN_PATHS})
   endif(NOT TK_WISH)
-endif(TCL_ENABLE_TK)
+endif()
 
 if(TCLSH_VERSION_STRING)
   set(TCL_TCLSH_VERSION "${TCLSH_VERSION_STRING}")
 else()
-  get_filename_component(TCL_TCLSH_PATH "${TCL_TCLSH}" PATH)
-  get_filename_component(TCL_TCLSH_PATH_PARENT "${TCL_TCLSH_PATH}" PATH)
+  if(NOT CMAKE_CROSSCOMPILING)
+    get_filename_component(TCL_TCLSH_PATH "${TCL_TCLSH}" PATH)
+    get_filename_component(TCL_TCLSH_PATH_PARENT "${TCL_TCLSH_PATH}" PATH)
+  endif()
   string(REGEX REPLACE "^.*tclsh([0-9]\\.*[0-9]).*$" "\\1" TCL_TCLSH_VERSION "${TCL_TCLSH}")
 endif()
 
@@ -467,7 +477,7 @@ if(TCL_ENABLE_TK)
 
   # IFF we have TCL_TK_SYSTEM_GRAPHICS set and have a system TK_WISH, check that the
   # windowing system matches the specified type
-  if(NOT "${TCL_TK_SYSTEM_GRAPHICS}" STREQUAL "" AND TK_WISH AND NOT TARGET "${TK_WISH}")
+  if(NOT CMAKE_CROSSCOMPILING AND NOT "${TCL_TK_SYSTEM_GRAPHICS}" STREQUAL "" AND TK_WISH AND NOT TARGET "${TK_WISH}")
     set(
       tkwin_script
       "
@@ -509,7 +519,7 @@ if(TCL_ENABLE_TK)
       unset(TK_STUB_LIBRARY CACHE)
       unset(TTK_STUB_LIBRARY CACHE)
     endif(NOT "${WSYS}" STREQUAL "${TCL_TK_SYSTEM_GRAPHICS}")
-  endif(NOT "${TCL_TK_SYSTEM_GRAPHICS}" STREQUAL "" AND TK_WISH AND NOT TARGET "${TK_WISH}")
+  endif()
 endif(TCL_ENABLE_TK)
 
 include(FindPackageHandleStandardArgs)
@@ -530,7 +540,12 @@ if(TCL_ENABLE_TK)
   )
   set(TK_FIND_REQUIRED ${TCL_FIND_REQUIRED})
   set(TK_FIND_QUIETLY ${TCL_FIND_QUIETLY})
-  find_package_handle_standard_args(TK REQUIRED_VARS TK_LIBRARY TK_STUB_LIBRARY TK_INCLUDE_PATH TK_WISH)
+  set(_TK_REQUIRED TK_LIBRARY TK_STUB_LIBRARY TK_INCLUDE_PATH)
+  if(NOT CMAKE_CROSSCOMPILING)
+    list(APPEND _TK_REQUIRED TK_WISH)
+  endif()
+  find_package_handle_standard_args(TK REQUIRED_VARS ${_TK_REQUIRED})
+  unset(_TK_REQUIRED)
   unset(FPHSA_NAME_MISMATCHED)
 endif(TCL_ENABLE_TK)
 

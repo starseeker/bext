@@ -1,19 +1,35 @@
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
-@@ -6,6 +6,12 @@
- 
+@@ -7,7 +7,15 @@
  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
  find_package(TCL REQUIRED)
-+
+ 
+-find_package(X11)
 +set(TCL_GENERATOR_COMMAND "${TCL_TCLSH}")
 +if (CMAKE_CROSSCOMPILING)
 +  set(TCL_GENERATOR_COMMAND "${CMAKE_COMMAND}" -E env
 +    --unset=TCL_LIBRARY --unset=TCLLIBPATH --unset=TK_LIBRARY "${TCL_TCLSH}")
 +endif ()
++
++if (NOT WIN32)
++  find_package(X11)
++endif ()
  
- find_package(X11)
+ include_directories(
+   ${CMAKE_CURRENT_SOURCE_DIR}/src
+@@ -37,27 +45,30 @@
  
-@@ -45,19 +51,19 @@
+ # Windows specific flags
+ if (WIN32)
+-  set(TKHTML_CFLAGS "${TKHTML_CFLAGS} -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEP -Ot -Oi -fp:strict -Gs -GS -DUSE_TCL_STUBS -DUSE_TK_STUBS -D__WIN32__")
++  set(TKHTML_CFLAGS "${TKHTML_CFLAGS} -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEP -DUSE_TCL_STUBS -DUSE_TK_STUBS -D__WIN32__")
+   set(TKHTML_CFLAGS "${TKHTML_CFLAGS} -Dinline=__inline -DBUILD_tkhtml")
++  if (MSVC)
++    string(APPEND TKHTML_CFLAGS " -Ot -Oi -fp:strict -Gs -GS")
++  endif ()
+ endif (WIN32)
+ 
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${TKHTML_CFLAGS}")
  
  add_custom_command(
    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/htmldefaultstyle.c
@@ -36,7 +52,7 @@
    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/htmltokens.c ${CMAKE_CURRENT_SOURCE_DIR}/src/cssprop.tcl ${TCL_TCLSH}
    )
  
-@@ -116,7 +122,7 @@
+@@ -116,7 +127,7 @@
  
  add_custom_command(
    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/tkhtml.n

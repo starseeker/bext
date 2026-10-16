@@ -1,0 +1,48 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -7,7 +7,9 @@
+ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMake")
+ find_package(TCL REQUIRED)
+ 
+-if (WIN32 OR "${TK_SYSTEM_GRAPHICS}" MATCHES "aqua")
++if (WIN32)
++  # Tk installs its Windows X11 compatibility headers below TK_INCLUDE_PATH.
++elseif ("${TK_SYSTEM_GRAPHICS}" MATCHES "aqua")
+   include_directories("${TK_SOURCE_DIR}/xlib/X11")
+ else ()
+   find_package(X11)
+@@ -40,19 +42,30 @@
+ 
+ # Windows specific flags
+ IF(WIN32)
+-  set(TKTABLE_CFLAGS "${TKTABLE_CFLAGS} -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEP -Ot -Oi -fp:strict -Gs -GS -GL")
++  set(TKTABLE_CFLAGS "${TKTABLE_CFLAGS} -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEP")
+   set(TKTABLE_CFLAGS "${TKTABLE_CFLAGS} -Dinline=__inline -DBUILD_Tktable")
+   set(TKTABLE_CFLAGS "${TKTABLE_CFLAGS} -DTBL_COMMAND=\"table\" -DTBL_RUNTIME=\"tkTable.tcl\" -DTBL_RUNTIME_DIR=\"\"")
++  if (MSVC)
++    string(APPEND TKTABLE_CFLAGS " -Ot -Oi -fp:strict -Gs -GS -GL")
++  endif ()
+ ENDIF(WIN32)
+ 
+ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${TKTABLE_CFLAGS}")
+ 
+-add_executable(tktable_hdr tktable_hdr.cxx)
+-set_target_properties(tktable_hdr PROPERTIES FOLDER "Compilation Utilities")
++if (CMAKE_CROSSCOMPILING)
++  if (NOT EXISTS "${TKTABLE_HDR_EXECUTABLE}")
++    message(FATAL_ERROR "Cross compiling Tktable requires a native TKTABLE_HDR_EXECUTABLE")
++  endif ()
++  add_executable(tktable_hdr IMPORTED)
++  set_target_properties(tktable_hdr PROPERTIES IMPORTED_LOCATION "${TKTABLE_HDR_EXECUTABLE}")
++else ()
++  add_executable(tktable_hdr tktable_hdr.cxx)
++  set_target_properties(tktable_hdr PROPERTIES FOLDER "Compilation Utilities")
++endif ()
+ 
+ add_custom_command(
+   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h
+-  COMMAND tktable_hdr ${CMAKE_CURRENT_SOURCE_DIR}/library/tkTable.tcl ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h.new
++  COMMAND $<TARGET_FILE:tktable_hdr> ${CMAKE_CURRENT_SOURCE_DIR}/library/tkTable.tcl ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h.new
+   COMMAND ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h.new ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h
+   COMMAND ${CMAKE_COMMAND} -E remove ${CMAKE_CURRENT_BINARY_DIR}/tkTable.tcl.h.new
+   DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/library/tkTable.tcl tktable_hdr

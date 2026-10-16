@@ -44,10 +44,30 @@ if (ENABLE_TKTABLE)
 
   RegisterDeps(TKTABLE)
 
+  set(TKTABLE_HOST_ARGS)
+  if (CMAKE_CROSSCOMPILING)
+    ExternalProject_Add(TKTABLE_HOST_BLD
+      BEXT_BUILD_ROLE HOST
+      SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/host"
+      BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+      CMAKE_ARGS
+        "-DTKTABLE_SOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR}/tktable"
+        "-DCMAKE_INSTALL_PREFIX=${BEXT_HOST_INSTALL_PREFIX}"
+      STEP_TARGETS install)
+    list(APPEND TKTABLE_HOST_ARGS
+      "-DTKTABLE_HDR_EXECUTABLE=${BEXT_HOST_INSTALL_PREFIX}/bin/tktable_hdr${BEXT_HOST_EXECUTABLE_SUFFIX}"
+      "-DTCL_TCLSH=${BEXT_HOST_TCLSH}" "-DTCLSH_VERSION_STRING=8.6")
+  endif ()
+
   ExternalProject_Add(TKTABLE_BLD
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tktable"
+    URL "${CMAKE_CURRENT_SOURCE_DIR}/tktable"
     BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+    PATCH_COMMAND ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS}
+      -i "${CMAKE_CURRENT_SOURCE_DIR}/tktable_cross.patch"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_SOURCE_DIR}/CMake/FindTCL.cmake" "<SOURCE_DIR>/CMake/FindTCL.cmake"
     CMAKE_ARGS
+    ${TKTABLE_HOST_ARGS}
     ${BUILD_TYPE_SPECIFIER}
     -DBIN_DIR=$<IF:$<BOOL:${WIN32}>,${LIB_DIR},${BIN_DIR}>
     -DLIB_DIR=${LIB_DIR}
@@ -67,6 +87,13 @@ if (ENABLE_TKTABLE)
     )
 
   TargetInstallDeps(TKTABLE TKTABLE_DEPENDS)
+  ExternalProject_Add_StepDependencies(TKTABLE_BLD patch "${CMAKE_SOURCE_DIR}/CMake/FindTCL.cmake")
+  if (CMAKE_CROSSCOMPILING)
+    ExternalProject_Add_StepDependencies(TKTABLE_BLD configure TKTABLE_HOST_BLD-install)
+    if (BEXT_HOST_TCL_TARGET)
+      ExternalProject_Add_StepDependencies(TKTABLE_BLD configure ${BEXT_HOST_TCL_TARGET})
+    endif ()
+  endif ()
 
   # Copy the license into position in CMAKE_BUNDLE_INSTALL_PREFIX
   configure_file(

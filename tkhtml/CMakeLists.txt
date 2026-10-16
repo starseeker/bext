@@ -57,6 +57,8 @@ if (ENABLE_TKHTML)
     BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
     PATCH_COMMAND ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS}
       -i "${CMAKE_CURRENT_SOURCE_DIR}/tkhtml_native_tcl.patch"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_SOURCE_DIR}/CMake/FindTCL.cmake" "<SOURCE_DIR>/CMake/FindTCL.cmake"
     CMAKE_ARGS
     ${TKHTML_HOST_ARGS}
     ${BUILD_TYPE_SPECIFIER}
@@ -78,6 +80,7 @@ if (ENABLE_TKHTML)
     )
 
   TargetInstallDeps(TKHTML TKHTML_DEPENDS)
+  ExternalProject_Add_StepDependencies(TKHTML_BLD patch "${CMAKE_SOURCE_DIR}/CMake/FindTCL.cmake")
   if (BEXT_HOST_TCL_TARGET)
     ExternalProject_Add_StepDependencies(TKHTML_BLD configure ${BEXT_HOST_TCL_TARGET})
   endif ()
