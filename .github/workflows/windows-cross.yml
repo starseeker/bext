@@ -1,0 +1,85 @@
+name: Windows cross compilation
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  tcl_stack:
+    name: Linux to Windows Tcl stack (${{ matrix.compiler }})
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [mingw-gcc, llvm-mingw]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Install native tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential ninja-build
+
+      - name: Install MinGW GCC
+        if: matrix.compiler == 'mingw-gcc'
+        run: |
+          sudo apt-get install -y gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64
+
+      - name: Install LLVM-MinGW
+        if: matrix.compiler == 'llvm-mingw'
+        run: |
+          archive=llvm-mingw-20251216-ucrt-ubuntu-22.04-x86_64.tar.xz
+          curl --fail --location --retry 3 -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/mstorsjo/llvm-mingw/releases/download/20251216/$archive"
+          echo "db561734a05eb4a0695d5e901aadd6c1cda74bba4c9e102b677f81c6fd59849a  $RUNNER_TEMP/$archive" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/llvm-mingw"
+          tar -xJf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP/llvm-mingw" --strip-components=1
+
+      - name: Configure target and native build contexts
+        shell: bash
+        run: |
+          args=(-DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/CMake/toolchains/windows-${{ matrix.compiler }}.cmake")
+          if [[ '${{ matrix.compiler }}' == llvm-mingw ]]; then
+            args+=(-DBEXT_TOOLCHAIN_ROOT="$RUNNER_TEMP/llvm-mingw")
+          else
+            args+=(-DBEXT_WINDOWS_SYSROOT=/usr/x86_64-w64-mingw32)
+          fi
+          cmake -S . -B build -G Ninja "${args[@]}" \
+            -DCMAKE_BUILD_TYPE=Release -DENABLE_ALL=ON \
+            -DUSE_BRLCAD=OFF -DUSE_BRLCAD_EXTRA=OFF -DUSE_GDAL=OFF \
+            -DUSE_QT=OFF -DUSE_TCL=ON -DEXT_BUILD_VERBOSE=ON
+
+      - name: Build native generators and Windows packages
+        run: |
+          cmake --build build --parallel 4 --target tclsh_cpy \
+            ITK_BLD-install TKHTML_BLD-install TKTABLE_BLD-install \
+            IWIDGETS_BLD-install
+
+      - name: Compile and link the installed interfaces
+        shell: bash
+        run: |
+          args=(-DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/CMake/toolchains/windows-${{ matrix.compiler }}.cmake")
+          if [[ '${{ matrix.compiler }}' == llvm-mingw ]]; then
+            args+=(-DBEXT_TOOLCHAIN_ROOT="$RUNNER_TEMP/llvm-mingw")
+          else
+            args+=(-DBEXT_WINDOWS_SYSROOT=/usr/x86_64-w64-mingw32)
+          fi
+          cmake -S CMake/tests/tcl_stack -B consumer -G Ninja "${args[@]}" \
+            -DBEXT_TCL_PREFIX="$GITHUB_WORKSPACE/build/install"
+          cmake --build consumer --verbose
+          file build/noinstall/host/bin/tclsh8.6 build/noinstall/host/bin/tktable_hdr
+          file build/install/bin/*.exe build/install/bin/*.dll consumer/*.dll
+
+      - name: Upload diagnostic logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-cross-${{ matrix.compiler }}-logs
+          path: |
+            build/**/CMakeCache.txt
+            build/**/CMakeConfigureLog.yaml
+            build/**/config.log
+            build/**/*-err.log
+            build/**/*-out.log
+            consumer/**/CMakeConfigureLog.yaml

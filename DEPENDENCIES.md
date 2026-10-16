@@ -77,7 +77,7 @@ selection further.
 | `rkcommon` | `USE_OSPRAY` | `install` | `onetbb`, `patch` | [repository](https://github.com/BRL-CAD/rkcommon) |
 | `sqlite3` | `USE_GDAL` | `install` | `patch` | [repository](https://github.com/BRL-CAD/sqlite3.git) |
 | `stepcode` | `USE_BRLCAD_EXTRA` | `install` | `lemon`, `patch`, `perplex`, `re2c` | [repository](https://github.com/BRL-CAD/stepcode) |
-| `strclear` | `USE_BRLCAD` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/strclear) |
+| `strclear` | always considered | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/strclear) |
 | `tcl` | `USE_TCL` | `install` | `patch`, `zlib` | [repository](https://github.com/BRL-CAD/tcl.git) |
 | `tiff` | `USE_APPLESEED`, `USE_GDAL` | `install` | `jpeg`, `patch`, `zlib` | [repository](https://github.com/BRL-CAD/libtiff) |
 | `tinygltf` | `USE_BRLCAD` | `install` | `patch` | [repository](https://github.com/BRL-CAD/tinygltf.git) |

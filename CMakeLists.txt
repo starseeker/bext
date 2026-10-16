@@ -420,7 +420,8 @@ add_project(astyle GROUPS "BRLCAD")
 add_project(lemon GROUPS "BRLCAD")
 add_project(re2c GROUPS "BRLCAD")
 add_project(perplex GROUPS "BRLCAD")
-add_project(strclear GROUPS "BRLCAD")
+# Finalization uses strclear for every bundle, including a Tcl-only build.
+add_project(strclear)
 
 # RPATH editing - LIEF has the core capabilities, and plief exposes them via
 # a command line utility with patchelf compatible options, so we can drop

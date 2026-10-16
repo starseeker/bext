@@ -414,12 +414,65 @@ To exercise Tcl generation in the standalone build-context fixture, add
 fixture then runs native Tcl to generate another source file in the target
 library.  It can also use `BEXT_HOST_TCLSH` to test a supplied interpreter.
 
-Target Tcl remains unfinished: the GNU adapter needs Windows configure and
-cross-aware package builds; clang-cl needs a replacement for the native
-Windows batch/nmake path.  Those target steps report an explicit error during
-a cross build.  System Tcl/Tk validation also cannot run target extensions on
-the host and is rejected.  Native Tcl alone does not supply BRL-CAD's `btclsh`,
-which needs native BRL-CAD libraries and extensions.  Qt host tools, STEPcode's
+## Windows GNU Tcl/Tk stack
+
+On Unix hosts, MinGW GCC and LLVM-MinGW configurations use Tcl and Tk's
+Windows configure scripts.  The native Tcl interpreter runs stub generation
+and other scripts; target compilation builds Tcl, its bundled extensions
+(including Itcl), Tk, Itk, Tkhtml, and Tktable.  Tktable's C++ header generator
+also builds separately for the host.  Iwidgets installs its script library.
+These builds use bundled target zlib and keep host package paths out of
+target configure and make invocations.
+
+A focused build can exercise this stack without the other BRL-CAD groups:
+
+```sh
+cmake -S . -B build/windows-tcl -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$PWD/CMake/toolchains/windows-llvm-mingw.cmake" \
+  -DBEXT_TOOLCHAIN_ROOT=/opt/llvm-mingw \
+  -DCMAKE_BUILD_TYPE=Release -DENABLE_ALL=ON \
+  -DUSE_BRLCAD=OFF -DUSE_BRLCAD_EXTRA=OFF -DUSE_GDAL=OFF -DUSE_QT=OFF \
+  -DUSE_TCL=ON
+cmake --build build/windows-tcl --parallel 4 --target \
+  tclsh_cpy ITK_BLD-install TKHTML_BLD-install TKTABLE_BLD-install \
+  IWIDGETS_BLD-install
+```
+
+For GCC, substitute `windows-mingw-gcc.cmake` and its toolchain root.  On
+Debian/Ubuntu with packaged MinGW-w64, omit `BEXT_TOOLCHAIN_ROOT` and set
+`BEXT_WINDOWS_SYSROOT=/usr/x86_64-w64-mingw32`.  The native bootstrap needs a
+native C/C++ toolchain; the Windows configure adapters need a POSIX shell
+and GNU make.  Use source, build, and install paths without spaces.  Use a
+single-configuration generator and a fresh build directory for each target
+toolchain.  The Autotools adapters accept one compiler sysroot and combine
+the executable/shared linker flags into their single `LDFLAGS` setting, so
+those flags must be valid for both kinds of link.
+
+Check the installed public headers and stub libraries with a separate
+consumer, using the same target toolchain:
+
+```sh
+cmake -S CMake/tests/tcl_stack -B build/windows-tcl-consumer -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$PWD/CMake/toolchains/windows-llvm-mingw.cmake" \
+  -DBEXT_TOOLCHAIN_ROOT=/opt/llvm-mingw \
+  -DBEXT_TCL_PREFIX="$PWD/build/windows-tcl/install"
+cmake --build build/windows-tcl-consumer
+```
+
+The `Windows cross compilation` workflow exercises MinGW GCC and LLVM-MinGW
+on Linux.  The consumer compiles and links a Windows DLL; it does not load
+that DLL or test graphical packages.  Local validation has built the x86-64
+stack using native FreeBSD LLVM 21 tools with the LLVM-MinGW 20251216 UCRT
+headers and libraries, and verified PE executables/DLLs and a separate
+consumer link.  Other architectures and target runtime loading still need
+validation.  Compiler runtime DLLs needed by the selected toolchain must
+also be supplied when deploying the target installation.
+
+clang-cl target Tcl still needs a replacement for the native Windows
+batch/nmake path and reports an explicit error during a cross build.
+System Tcl/Tk validation also cannot run target extensions on the host and
+is rejected.  Native Tcl alone does not supply BRL-CAD's `btclsh`, which
+needs native BRL-CAD libraries and extensions.  Qt host tools, STEPcode's
 `exp2cxx`, SQLite's database generator, other BRL-CAD generators, and target
 runtime probes still need integration before a complete Windows build can
 be claimed.
