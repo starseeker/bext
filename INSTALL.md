@@ -468,6 +468,13 @@ consumer link.  Other architectures and target runtime loading still need
 validation.  Compiler runtime DLLs needed by the selected toolchain must
 also be supplied when deploying the target installation.
 
+The optional `dll_loadcheck` target checks loading DLLs in the installed
+`bin/` directory.  Cross builds must set `CMAKE_CROSSCOMPILING_EMULATOR` to
+a compatible Windows runner (for example, a configured Wine installation).
+The check fails explicitly if no runner is supplied; compiling its Windows
+test executable alone does not validate DLL loading.  Tcl package loading
+and graphical behavior need additional target runtime tests.
+
 clang-cl target Tcl still needs a replacement for the native Windows
 batch/nmake path and reports an explicit error during a cross build.
 System Tcl/Tk validation also cannot run target extensions on the host and

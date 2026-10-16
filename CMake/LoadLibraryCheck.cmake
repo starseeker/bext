@@ -37,24 +37,28 @@
 # function on Windows.
 
 function(LoadLibraryCheck LLTEST_EXEC dlldir)
+  if (BEXT_CROSSCOMPILING AND NOT BEXT_EMULATOR)
+    message(FATAL_ERROR
+      "dll_loadcheck cannot run Windows binaries on the build host. "
+      "Set CMAKE_CROSSCOMPILING_EMULATOR to a compatible Windows runner "
+      "or run the check on Windows.")
+  endif ()
   if (NOT EXISTS "${dlldir}")
-    message("Dll directory ${dlldir} not found\n")
-    return()
+    message(FATAL_ERROR "Dll directory ${dlldir} not found")
   endif (NOT EXISTS "${dlldir}")
   if (NOT EXISTS "${LLTEST_EXEC}")
-    message("Test executable ${LLTEST_EXEC} not found\n")
-    return()
+    message(FATAL_ERROR "Test executable ${LLTEST_EXEC} not found")
   endif (NOT EXISTS "${LLTEST_EXEC}")
   file(GLOB dll_files RELATIVE "${dlldir}" "${dlldir}/*.dll")
   set(load_fail 0)
   foreach(dlf ${dll_files})
     message("Dll LoadLibrary check: ${LLTEST_EXEC} ${dlf}")
-    execute_process(COMMAND ${LLTEST_EXEC} ${dlf}
+    execute_process(COMMAND ${BEXT_EMULATOR} "${LLTEST_EXEC}" "${dlf}"
       RESULT_VARIABLE LSTATUS OUTPUT_VARIABLE LOUT ERROR_VARIABLE LOUT
-      WORKING_DIRECTORY ${dlldir}
+      WORKING_DIRECTORY "${dlldir}"
       )
     if (LSTATUS)
-      message("LoadLibrary call with dll file ${dllfile} did not succeed: ${LOUT}")
+      message("LoadLibrary call with dll file ${dlf} did not succeed: ${LSTATUS}: ${LOUT}")
       set(load_fail 1)
     endif (LSTATUS)
   endforeach(dlf ${dll_files})

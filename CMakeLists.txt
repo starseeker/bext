@@ -848,8 +848,14 @@ add_custom_target(dll_typecheck
 if (WIN32)
   add_executable(lltest ${CMAKE_SOURCE_DIR}/CMake/LoadLibraryTest.cpp)
   add_custom_target(dll_loadcheck
-    COMMAND ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=\"$<CONFIG>\" -DLEXEC=\"$<TARGET_FILE:lltest>\" -DDLL_DIR=\"${CMAKE_INSTALL_PREFIX}/install/bin\" -P ${CMAKE_SOURCE_DIR}/CMake/LoadLibraryCheck.cmake
-    DEPENDS lltest
+    COMMAND ${CMAKE_COMMAND}
+      "-DLEXEC=$<TARGET_FILE:lltest>"
+      "-DDLL_DIR=${CMAKE_BUNDLE_INSTALL_PREFIX}/${BIN_DIR}"
+      "-DBEXT_CROSSCOMPILING=${CMAKE_CROSSCOMPILING}"
+      "-DBEXT_EMULATOR=${CMAKE_CROSSCOMPILING_EMULATOR}"
+      -P ${CMAKE_SOURCE_DIR}/CMake/LoadLibraryCheck.cmake
+    DEPENDS lltest bext_finalize
+    VERBATIM
     )
 endif (WIN32)
 
