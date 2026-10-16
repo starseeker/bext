@@ -1,3 +1,10 @@
+if ("@CMAKE_CROSSCOMPILING@" STREQUAL "TRUE")
+  message(FATAL_ERROR
+    "The target Tcl MSVC build adapter requires a native Windows host. "
+    "The clang-cl cross adapter and cross-aware package builds are not yet implemented. "
+    "TCL_HOST_BLD-install can be built independently for native Tcl.")
+endif ()
+
 message("Tcl build begins\n")
 
 set(BUILD_SCRIPT "${CMAKE_BINARY_DIR}/build_tcl.bat")

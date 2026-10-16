@@ -389,3 +389,37 @@ Normal configuration checks executable linking.  For an object/archive-only
 orchestration test without a complete SDK, additionally pass
 `-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY`.  Do not use that setting to
 claim a working Windows toolchain: it deliberately skips the link check.
+
+## Native Tcl during cross compilation
+
+Cross builds with Tcl enabled provide `TCL_HOST_BLD-install`, which builds a
+native Tcl 8.6 core in an independent source/build tree.  Its interpreter,
+script library, headers, and static library install under the native prefix.
+The bootstrap excludes Tk and bundled extensions.  Its compiler environment
+is native, and its script invocations clear target Tcl package settings.
+
+```sh
+cmake --build build/windows --target TCL_HOST_BLD-install
+```
+
+Alternatively, set `BEXT_HOST_TCLSH` to an existing runnable Tcl 8.6 interpreter.
+Configuration checks both the interpreter and its script library.  A supplied
+interpreter is currently required when the build host is Windows; the bundled
+native bootstrap uses Unix configure.  `BEXT_HOST_TCL_JOBS` controls bootstrap
+parallelism.  Tkhtml's source generators use this native interpreter while its
+headers and libraries continue to come from the target installation.
+
+To exercise Tcl generation in the standalone build-context fixture, add
+`-DBEXT_CONTEXT_TCL_SOURCE="$PWD/tcl/tcl"` to its configuration command.  The
+fixture then runs native Tcl to generate another source file in the target
+library.  It can also use `BEXT_HOST_TCLSH` to test a supplied interpreter.
+
+Target Tcl remains unfinished: the GNU adapter needs Windows configure and
+cross-aware package builds; clang-cl needs a replacement for the native
+Windows batch/nmake path.  Those target steps report an explicit error during
+a cross build.  System Tcl/Tk validation also cannot run target extensions on
+the host and is rejected.  Native Tcl alone does not supply BRL-CAD's `btclsh`,
+which needs native BRL-CAD libraries and extensions.  Qt host tools, STEPcode's
+`exp2cxx`, SQLite's database generator, other BRL-CAD generators, and target
+runtime probes still need integration before a complete Windows build can
+be claimed.

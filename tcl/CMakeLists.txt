@@ -20,6 +20,18 @@ set(TCL_MAJOR_VERSION 8)
 set(TCL_MINOR_VERSION 6)
 set(TCL_VERSION "${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION}")
 
+# System-stack validation executes Tcl and loads extensions.  It cannot
+# validate target DLLs using a native interpreter during a cross build.
+if (CMAKE_CROSSCOMPILING AND NOT DISABLE_TCL)
+  if (DEFINED ENABLE_TCL AND NOT ENABLE_TCL)
+    message(FATAL_ERROR "System Tcl/Tk validation is not available when cross compiling. Enable the bundled stack with ENABLE_TCL=ON, or disable Tcl with DISABLE_TCL=ON.")
+  endif ()
+  set(ENABLE_TCL ON CACHE BOOL "Enable tcl build" FORCE)
+  git_submodule_init(tcl unix/configure)
+  include("${CMAKE_SOURCE_DIR}/CMake/BextHostTcl.cmake")
+  bext_add_host_tcl("${CMAKE_CURRENT_SOURCE_DIR}/tcl")
+endif ()
+
 
 # FIXME: Build currently fails hard on MacOS if allowed to use system Tcl
 # due to incompatibilities with Itcl and inconsistent flags, so we turn

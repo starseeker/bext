@@ -1,0 +1,22 @@
+# This script runs at build time, when target environment settings may have
+# returned even though the native CMake configure cleared them.
+foreach(v CC CXX RC AR RANLIB CFLAGS CXXFLAGS CPPFLAGS LDFLAGS
+    CMAKE_TOOLCHAIN_FILE CMAKE_PREFIX_PATH PKG_CONFIG_PATH PKG_CONFIG_LIBDIR
+    PKG_CONFIG_SYSROOT_DIR CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH
+    TCL_LIBRARY TCLLIBPATH TK_LIBRARY CONFIG_SITE)
+  unset(ENV{${v}})
+endforeach()
+set(ENV{CC} [==[@CMAKE_C_COMPILER@ @CMAKE_C_COMPILER_ARG1@]==])
+set(ENV{AR} [==[@CMAKE_AR@]==])
+set(ENV{RANLIB} [==[@CMAKE_RANLIB@]==])
+set(ENV{CFLAGS} [==[@TCL_NATIVE_CFLAGS@]==])
+set(ENV{LDFLAGS} [==[@TCL_NATIVE_LDFLAGS@]==])
+# A static interpreter needs no loader path into either installation.  Tcl's
+# bundled zlib remains available in this private source copy.
+execute_process(COMMAND "@TCL_NATIVE_SOURCE@/unix/configure"
+  "--prefix=@CMAKE_INSTALL_PREFIX@" --disable-shared
+  WORKING_DIRECTORY "@TCL_NATIVE_BINARY@"
+  RESULT_VARIABLE result)
+if (NOT "${result}" STREQUAL "0")
+  message(FATAL_ERROR "Native Tcl configure failed: ${result}")
+endif ()

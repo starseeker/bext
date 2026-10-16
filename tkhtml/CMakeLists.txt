@@ -43,10 +43,22 @@ if (ENABLE_TKHTML)
 
   RegisterDeps(TKHTML)
 
+  set(TKHTML_HOST_ARGS)
+  if (CMAKE_CROSSCOMPILING)
+    if (NOT BEXT_HOST_TCLSH)
+      message(FATAL_ERROR "Cross compiling Tkhtml requires BEXT_HOST_TCLSH")
+    endif ()
+    list(APPEND TKHTML_HOST_ARGS
+      "-DTCL_TCLSH=${BEXT_HOST_TCLSH}" "-DTCLSH_VERSION_STRING=8.6")
+  endif ()
+
   ExternalProject_Add(TKHTML_BLD
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/tkhtml"
+    URL "${CMAKE_CURRENT_SOURCE_DIR}/tkhtml"
     BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+    PATCH_COMMAND ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS}
+      -i "${CMAKE_CURRENT_SOURCE_DIR}/tkhtml_native_tcl.patch"
     CMAKE_ARGS
+    ${TKHTML_HOST_ARGS}
     ${BUILD_TYPE_SPECIFIER}
     -DBIN_DIR=$<IF:$<BOOL:${WIN32}>,${LIB_DIR},${BIN_DIR}>
     -DLIB_DIR=${LIB_DIR}
@@ -66,6 +78,9 @@ if (ENABLE_TKHTML)
     )
 
   TargetInstallDeps(TKHTML TKHTML_DEPENDS)
+  if (BEXT_HOST_TCL_TARGET)
+    ExternalProject_Add_StepDependencies(TKHTML_BLD configure ${BEXT_HOST_TCL_TARGET})
+  endif ()
 
   # Copy the license into position in CMAKE_BUNDLE_INSTALL_PREFIX
   configure_file(
