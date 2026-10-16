@@ -1,6 +1,6 @@
-diff -Naur astyle/CMakeLists.txt ASTYLE_BLD/CMakeLists.txt
---- astyle/CMakeLists.txt	2026-09-09 09:23:57.197122193 -0400
-+++ ASTYLE_BLD/CMakeLists.txt	2026-09-09 09:17:33.423173910 -0400
+diff -Naur astyle/AStyle/CMakeLists.txt ASTYLE_BLD/AStyle/CMakeLists.txt
+--- astyle/AStyle/CMakeLists.txt	2026-09-09 09:23:57.197122193 -0400
++++ ASTYLE_BLD/AStyle/CMakeLists.txt	2026-09-09 09:17:33.423173910 -0400
 @@ -17,6 +17,8 @@
  endif()
  

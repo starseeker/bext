@@ -103,6 +103,8 @@ cmake -DPROFILE=auto -DBEXT_GIT_REMAP=/path/to/mirrors.txt \
 
 The second command previews bootstrap selection, resolved rewrite rules, and
 transport mode without fetching.  Omit `LIST_ONLY` to populate the submodules.
+Bootstrap returns an error if any selected submodule, including a recursive
+submodule, cannot be populated.
 Pass the same mapping file to both workflows if you use both.
 
 The file is data, with two optional sections:
@@ -172,6 +174,12 @@ the same rewrite.  Rules match original URLs and do not chain; a rule for an
 already-rewritten destination will not apply a second time.  Normal user Git
 configuration still participates, so avoid competing rules for identical
 source prefixes outside bext.
+
+Relative nested submodule URLs resolve against the parent's stored remote URL,
+which remains canonical.  For example, remapping OIDN to `RenderKit/oidn` still
+resolves its `../mkl-dnn.git` URL to `https://github.com/BRL-CAD/mkl-dnn.git`.
+Add a `[urls]` entry for that resolved URL when the root-wide mapping does not
+provide the nested repository.
 
 ## Transport and pinned commits
 
