@@ -13,7 +13,7 @@ if (source_abs STREQUAL dest_abs)
 endif ()
 
 cmake_path(GET dest_abs FILENAME dest_name)
-if (NOT dest_name STREQUAL "STEPCODE_BLD")
+if (NOT dest_name MATCHES "^STEPCODE_(HOST_)?BLD$")
   message(FATAL_ERROR "Refusing to remove unexpected destination: ${dest_abs}")
 endif ()
 
