@@ -12,6 +12,12 @@ list(APPEND BEXT_TOOLCHAIN_VARIABLES CONTEXT_TEST_LIST)
 set(CONTEXT_TEST_LIST "first path;second path;;last")
 bext_initialize_build_contexts()
 
+set(BEXT_CONTEXT_TCL_SOURCE "" CACHE PATH "Optional bundled Tcl source for the native interpreter regression")
+if (BEXT_CONTEXT_TCL_SOURCE)
+  include("${bext_cmake}/BextHostTcl.cmake")
+  bext_add_host_tcl("${BEXT_CONTEXT_TCL_SOURCE}")
+endif ()
+
 ExternalProject_Add(native_generator
   BEXT_BUILD_ROLE HOST
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/generator"
@@ -24,11 +30,15 @@ ExternalProject_Add(target_library
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/library"
   CMAKE_ARGS
     "-DGENERATOR_EXECUTABLE=${BEXT_HOST_INSTALL_PREFIX}/bin/context_generator${BEXT_HOST_EXECUTABLE_SUFFIX}"
+    "-DTCL_GENERATOR_EXECUTABLE=${BEXT_HOST_TCLSH}"
     "-DEXPECTED_SYSTEM=${CMAKE_SYSTEM_NAME}"
     "-DEXPECTED_CROSS=${CMAKE_CROSSCOMPILING}"
     "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/install"
   STEP_TARGETS install)
 ExternalProject_Add_StepDependencies(target_library configure native_generator-install)
+if (BEXT_HOST_TCL_TARGET)
+  ExternalProject_Add_StepDependencies(target_library configure ${BEXT_HOST_TCL_TARGET})
+endif ()
 
 # An explicitly empty custom configure command must remain empty.
 ExternalProject_Add(no_configure

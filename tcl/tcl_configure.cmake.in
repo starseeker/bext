@@ -1,3 +1,10 @@
+if ("@CMAKE_CROSSCOMPILING@" STREQUAL "TRUE")
+  message(FATAL_ERROR
+    "The target Tcl configure adapter is not yet cross-compilation aware. "
+    "Build TCL_HOST_BLD-install for native Tcl; target Tcl still requires "
+    "a Windows configure/build adapter and cross-aware package builds.")
+endif ()
+
 if (NOT WIN32)
 
   if (APPLE)

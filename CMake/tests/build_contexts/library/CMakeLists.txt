@@ -12,6 +12,15 @@ add_custom_command(OUTPUT "${generated}"
   COMMAND "${GENERATOR_EXECUTABLE}" "${generated}"
   DEPENDS "${GENERATOR_EXECUTABLE}" VERBATIM)
 add_library(context_library STATIC "${generated}" platform.c platform.cpp)
+if (TCL_GENERATOR_EXECUTABLE)
+  set(tcl_generated "${CMAKE_CURRENT_BINARY_DIR}/tcl_generated.c")
+  add_custom_command(OUTPUT "${tcl_generated}"
+    COMMAND "${CMAKE_COMMAND}" -E env
+      --unset=TCL_LIBRARY --unset=TCLLIBPATH --unset=TK_LIBRARY
+      "${TCL_GENERATOR_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/generate.tcl" "${tcl_generated}"
+    DEPENDS "${TCL_GENERATOR_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/generate.tcl" VERBATIM)
+  target_sources(context_library PRIVATE "${tcl_generated}")
+endif ()
 if (WIN32)
   target_compile_definitions(context_library PRIVATE EXPECT_WINDOWS)
 endif ()
