@@ -205,50 +205,11 @@ include(ExternalProject)
 # Do not replace URL with SOURCE_DIR merely to avoid the local URL spelling;
 # that can cause patches or generated-file changes to modify the checkout.
 
-#---------------------------------------------------------------------
-# CMake 4.0 removed support for cmake_minimum_required(VERSION < 3.5), but a
-# number of our bundled third party projects still declare such old minimums.
-# Because each dependency is configured as an independent ExternalProject
-# sub-build (a separate cmake invocation), a top level CMAKE_POLICY_VERSION_MINIMUM
-# setting - whether on the command line or from a CMakePresets cache variable -
-# does NOT reach those sub-builds.  To make old dependencies configure regardless
-# of how bext itself is invoked, establish a default policy floor here and wrap
-# ExternalProject_Add so that every CMake-based sub-build is configured with it.
-#
-# The flag is inserted as the first CMAKE_ARGS value so it always lands inside
-# the CMAKE_ARGS group regardless of which ExternalProject keywords follow.
-# Sub-builds that drive a non-CMake configure (i.e. have no CMAKE_ARGS) are left
-# untouched.  Defining a command that already exists makes the original available
-# under the same name with a leading underscore, a documented CMake behavior.
-if (NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
-  set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
-endif (NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
-
-function(ExternalProject_Add name)
-  # Rebuild the call as a string of bracket-quoted arguments so that empty
-  # arguments (e.g. CONFIGURE_COMMAND "") and values containing spaces,
-  # semicolons or generator expressions are all preserved exactly.  Inject the
-  # policy floor immediately after the CMAKE_ARGS token so it becomes the first
-  # CMAKE_ARGS value.
-  set(ep_call "_ExternalProject_Add([==[${name}]==]")
-  if (ARGC GREATER 1)
-    math(EXPR ep_last "${ARGC} - 1")
-    foreach(ep_i RANGE 1 ${ep_last})
-      string(APPEND ep_call " [==[${ARGV${ep_i}}]==]")
-      if ("${ARGV${ep_i}}" STREQUAL "CMAKE_ARGS")
-        string(APPEND ep_call " [==[-DCMAKE_POLICY_VERSION_MINIMUM=${CMAKE_POLICY_VERSION_MINIMUM}]==]")
-      endif ("${ARGV${ep_i}}" STREQUAL "CMAKE_ARGS")
-    endforeach(ep_i RANGE 1 ${ep_last})
-  endif (ARGC GREATER 1)
-  string(APPEND ep_call ")")
-  cmake_language(EVAL CODE "${ep_call}")
-  if (TARGET ${name}-install)
-    get_property(_bext_install_targets GLOBAL PROPERTY BEXT_INSTALL_TARGETS)
-    list(APPEND _bext_install_targets ${name}-install)
-    list(REMOVE_DUPLICATES _bext_install_targets)
-    set_property(GLOBAL PROPERTY BEXT_INSTALL_TARGETS "${_bext_install_targets}")
-  endif (TARGET ${name}-install)
-endfunction(ExternalProject_Add name)
+# Forward the complete target toolchain to CMake sub-builds, and configure
+# native tools independently when the target platform differs from the host.
+include("${CMAKE_CURRENT_SOURCE_DIR}/CMake/BextBuildContexts.cmake")
+bext_initialize_build_contexts()
+include("${CMAKE_CURRENT_SOURCE_DIR}/CMake/BextExternalProject.cmake")
 
 # In case we need to pass some sort of reasonable parallel
 # flag to a build system, check our processor count
@@ -282,7 +243,7 @@ endif (NOT isMultiConfig)
 # as Git Bash can reorder PATH while leaving Visual Studio's environment markers
 # intact.  The wrappers also put the selected compiler's directory first so a
 # POSIX utility named link cannot shadow MSVC's link.exe.
-if(MSVC)
+if(MSVC AND CMAKE_HOST_WIN32)
 
   if(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(BEXT_MSVC_TARGET_ARCH x64)
@@ -311,7 +272,7 @@ if(MSVC)
     endif(NOT EXISTS "${VCVARS_BAT}")
   endif(NOT EXISTS "${VCVARS_BAT}")
 
-endif(MSVC)
+endif(MSVC AND CMAKE_HOST_WIN32)
 
 # If configurations change after a build has been performed, we don't
 # automatically scrub a pre-existing output directory to remove the files from
@@ -726,22 +687,22 @@ add_project(ospray GROUPS "OSPRAY")
 # during every configure pass.
 ###############################################################################
 set(BEXT_STRCLEAR_EXPECTED
-  "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}/strclear${CMAKE_EXECUTABLE_SUFFIX}")
+  "${BEXT_HOST_INSTALL_PREFIX}/${BIN_DIR}/strclear${BEXT_HOST_EXECUTABLE_SUFFIX}")
 if (TARGET STRCLEAR_BLD)
   set(BEXT_STRCLEAR_EXECUTABLE "${BEXT_STRCLEAR_EXPECTED}")
 else ()
-  find_program(BEXT_STRCLEAR_EXECUTABLE NAMES strclear HINTS "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}")
+  bext_find_host_program(BEXT_STRCLEAR_EXECUTABLE NAMES strclear HINTS "${BEXT_HOST_INSTALL_PREFIX}/${BIN_DIR}")
 endif ()
 if (NOT BEXT_STRCLEAR_EXECUTABLE)
   message(FATAL_ERROR "bext finalization requires strclear")
 endif ()
 
 set(BEXT_PLIEF_EXPECTED
-  "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}/plief${CMAKE_EXECUTABLE_SUFFIX}")
+  "${BEXT_HOST_INSTALL_PREFIX}/${BIN_DIR}/plief${BEXT_HOST_EXECUTABLE_SUFFIX}")
 if (TARGET PLIEF_BLD)
   set(BEXT_PLIEF_EXECUTABLE "${BEXT_PLIEF_EXPECTED}")
 else ()
-  find_program(BEXT_PLIEF_EXECUTABLE NAMES plief patchelf HINTS "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}")
+  bext_find_host_program(BEXT_PLIEF_EXECUTABLE NAMES plief patchelf HINTS "${BEXT_HOST_INSTALL_PREFIX}/${BIN_DIR}")
 endif ()
 
 set(BEXT_INSTALL_MANIFEST "${CMAKE_INSTALL_PREFIX}/bext-install-manifest.json")

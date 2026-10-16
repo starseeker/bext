@@ -96,7 +96,8 @@ function(bext_collect_dependency_inventory source_dir)
     if (wrapper_text MATCHES "-DCMAKE_INSTALL_PREFIX=\\$\\{CMAKE_BUNDLE_INSTALL_PREFIX\\}" OR
         wrapper_text MATCHES "--prefix=\\$\\{CMAKE_BUNDLE_INSTALL_PREFIX\\}")
       set(output_class install)
-    elseif(wrapper_text MATCHES "-DCMAKE_INSTALL_PREFIX=\\$\\{CMAKE_NOBUNDLE_INSTALL_PREFIX\\}" OR
+    elseif(wrapper_text MATCHES "-DCMAKE_INSTALL_PREFIX=\\$\\{BEXT_HOST_INSTALL_PREFIX\\}" OR
+           wrapper_text MATCHES "-DCMAKE_INSTALL_PREFIX=\\$\\{CMAKE_NOBUNDLE_INSTALL_PREFIX\\}" OR
            wrapper_text MATCHES "--prefix=\\$\\{CMAKE_NOBUNDLE_INSTALL_PREFIX\\}")
       set(output_class noinstall)
     elseif(wrapper_text MATCHES "CMAKE_BUNDLE_INSTALL_PREFIX" AND

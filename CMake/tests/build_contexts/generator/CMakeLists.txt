@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.26)
+project(NativeGenerator LANGUAGES C CXX)
+if (CMAKE_CROSSCOMPILING)
+  message(FATAL_ERROR "Build generator inherited the target toolchain")
+endif ()
+add_executable(context_generator generator.cpp)
+install(TARGETS context_generator RUNTIME DESTINATION bin)

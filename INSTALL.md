@@ -277,3 +277,56 @@ Git's long path handling when it checks out submodules.
 # macOS
 
 Assuming XCode is installed, good to go.
+
+# Cross compilation development
+
+Cross compilation is experimental.  The build now distinguishes native tools
+from target dependencies, but the complete Windows dependency stack and the
+downstream BRL-CAD build still require additional integration.  Native builds
+retain their existing output layout.
+
+For a cross build, `install/` contains target deliverables, `noinstall/`
+contains target compile-time assets, and `noinstall/host/` contains native
+tools and their library dependencies.  `BEXT_HOST_INSTALL_PREFIX` can select
+a different native installation prefix.  Do not put native libraries in the
+target prefix or add the native prefix to the target `CMAKE_PREFIX_PATH`.
+
+The native compiler defaults to `cc`/`c++` (with platform alternatives).
+Override it with `BEXT_HOST_C_COMPILER` and `BEXT_HOST_CXX_COMPILER`, or provide
+`BEXT_HOST_TOOLCHAIN_FILE` for a more involved native configuration.  The
+native compiler is checked by compiling, linking, and running C and C++
+programs.  `BEXT_HOST_PREFIX_PATH` supplies additional native package prefixes.
+Native sub-build configuration removes target compiler flags, toolchain, and
+pkg-config settings inherited through the environment; put intentional native
+settings in the native toolchain file.
+
+Target CMake sub-builds receive the parent toolchain, compiler targets,
+sysroots, resource tools, search policies, and compiler/linker flags through a
+generated initial cache.  Toolchain-specific inputs can be listed in
+`BEXT_TOOLCHAIN_VARIABLES`; inputs listed in
+`CMAKE_TRY_COMPILE_PLATFORM_VARIABLES` are forwarded as well.  Explicit
+per-dependency CMake arguments take precedence over these defaults.  Use
+separate build and output trees for each target toolchain and runtime.
+
+Dependency wrappers mark native builds with `BEXT_BUILD_ROLE HOST` in
+`ExternalProject_Add`, use the `BEXT_HOST_*` compiler and installation variables,
+and name their native prerequisites explicitly.  The default role is `TARGET`.
+Custom configure scripts must apply `BEXT_HOST_CMAKE_ARGS` or
+`BEXT_TARGET_CMAKE_ARGS` themselves when invoking CMake; ExternalProject does
+not apply `CMAKE_ARGS` to a custom `CONFIGURE_COMMAND`.
+
+The build-context regression fixture builds and runs a native source generator
+inside a target library build.  It also checks list-valued toolchain inputs,
+default configure commands, and explicitly empty configure commands:
+
+```sh
+cmake -S CMake/tests/build_contexts -B build/context-native -G Ninja
+cmake --build build/context-native
+cmake -S CMake/tests/build_contexts -B build/context-cross -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE=/absolute/path/to/windows-toolchain.cmake
+cmake --build build/context-cross
+```
+
+The fixture needs only target object/archive support.  That is useful for
+testing build orchestration without an SDK, but does not validate target
+headers, executable linking, DLL loading, or the full dependency stack.

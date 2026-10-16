@@ -2,8 +2,13 @@
 # and MachO binary formats.  We use it to define a tool for rpath manipulation.
 
 # Untested on Windows
-if (NOT MSVC)
+if (NOT BEXT_HOST_MSVC)
 
+  # LIEF is linked into a native utility.  A target package discovered by the
+  # cross toolchain cannot satisfy that dependency.
+  if (CMAKE_CROSSCOMPILING AND NOT DEFINED ENABLE_LIEF)
+    set(ENABLE_LIEF ON)
+  endif ()
   bext_enable(LIEF)
 
   if (ENABLE_LIEF)
@@ -13,6 +18,7 @@ if (NOT MSVC)
     RegisterDeps(LIEF)
 
     ExternalProject_Add(LIEF_BLD
+      BEXT_BUILD_ROLE HOST
       URL "${CMAKE_CURRENT_SOURCE_DIR}/LIEF"
       BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
       PATCH_COMMAND ${PATCH_EXECUTABLE};-E;-p1;${PATCH_OPTIONS};-i;${CMAKE_CURRENT_SOURCE_DIR}/lief_cmake.patch
@@ -27,11 +33,11 @@ if (NOT MSVC)
       -DBIN_DIR=${BIN_DIR}
       -DLIB_DIR=${LIB_DIR}
       -DBUILD_STATIC_LIBS=${BUILD_STATIC_LIBS}
-      -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-      -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-      -DCMAKE_INSTALL_PREFIX=${CMAKE_NOBUNDLE_INSTALL_PREFIX}
+      -DCMAKE_CXX_COMPILER=${BEXT_HOST_CXX_COMPILER}
+      -DCMAKE_C_COMPILER=${BEXT_HOST_C_COMPILER}
+      -DCMAKE_INSTALL_PREFIX=${BEXT_HOST_INSTALL_PREFIX}
       -DCMAKE_INSTALL_LIBDIR:PATH=${LIB_DIR}
-      -DCMAKE_INSTALL_RPATH=${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${LIB_DIR}
+      -DCMAKE_INSTALL_RPATH=${BEXT_HOST_INSTALL_PREFIX}/${LIB_DIR}
       -DLIEF_USE_CCACHE=OFF
       -DLIEF_ART=OFF
       -DLIEF_ASAN=OFF
@@ -62,7 +68,7 @@ if (NOT MSVC)
     TargetInstallDeps(LIEF LIEF_DEPENDS)
 
   endif (ENABLE_LIEF)
-endif (NOT MSVC)
+endif (NOT BEXT_HOST_MSVC)
 
 # Local Variables:
 # tab-width: 8
