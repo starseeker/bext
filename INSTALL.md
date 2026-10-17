@@ -544,10 +544,80 @@ PROJ database's integrity.  The native STEPcode consumer also passes its
 runtime check.  Both Windows GNU CI configurations exercise these builds.
 This does not validate the rest of the GDAL or optional BRL-CAD groups.
 
+## Native Qt tools
+
+Cross builds of bundled Qt first build native Qt Core, D-Bus, and the source
+generators under `noinstall/host/qt`.  `Qt6_HOST_BLD-install` provides this
+bootstrap independently.  The target Qt and Qt SVG builds use it through
+`QT_HOST_PATH`, while all shipped libraries and plugins use the target
+toolchain.  Native Qt headers and libraries remain in the host prefix.
+
+Set `BEXT_HOST_QT_PATH` to reuse an existing native Qt of the same version.
+It must provide the CoreTools, GuiTools, WidgetsTools, and DBusTools CMake
+packages.  Configuration checks the package version and runs `moc`, `uic`,
+and `rcc` to reject incompatible or non-native tools.  `BEXT_QT_JOBS` controls
+parallelism for both Qt builds.
+
+After the core configuration above:
+
+```sh
+cmake -S . -B build/windows-tcl -DUSE_QT=ON -DBEXT_QT_JOBS=4
+cmake --build build/windows-tcl --parallel 2 --target Qt6Svg_BLD-install
+cmake -S CMake/tests/qt_consumer -B build/windows-qt-consumer -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="$PWD/CMake/toolchains/windows-llvm-mingw.cmake" \
+  -DBEXT_TOOLCHAIN_ROOT=/opt/llvm-mingw \
+  -DBEXT_QT_PREFIX="$PWD/build/windows-tcl/install" \
+  -DQT_HOST_PATH="$PWD/build/windows-tcl/noinstall/host/qt"
+cmake --build build/windows-qt-consumer
+```
+
+The consumer exercises automatic meta-object, UI, and resource generation
+and links the target Widgets, SVG, OpenGLWidgets, and Network interfaces.
+Its runtime check remains disabled without a cross-compilation runner.
+When relocating the target installation, explicitly supply `QT_HOST_PATH`
+for the matching native installation on the build machine.
+
+Local validation with the FreeBSD/LLVM-MinGW setup above has built Qt and
+Qt SVG and linked the consumer both before and after bundle finalization.
+The finalized target prefix contains Windows PE binaries and no native ELF
+binaries.  The LLVM-MinGW CI job also builds Qt and checks the finalized
+consumer.  Windows runtime behavior and the MinGW GCC Qt build remain
+unvalidated locally.
+
+The finalization regression checks overlapping source/build/install prefixes
+and repeated cleanup, so exported absolute library paths remain usable:
+
+```sh
+cmake -DBEXT_TEST_ROOT="$PWD/build/finalize-regression" \
+  -DBEXT_STRCLEAR="$PWD/build/windows-tcl/noinstall/host/bin/strclear" \
+  -P CMake/tests/finalize_install.cmake
+```
+
+## Remaining downstream integration
+
+The dependency builds do not yet constitute a complete BRL-CAD cross build.
+A configure probe of BRL-CAD identified these additional requirements:
+
+* Whole-project `try_compile` checks must use CMake policy CMP0137 `NEW` so
+  compiler target and SDK inputs reach the nested project.  Setting
+  `CMAKE_POLICY_DEFAULT_CMP0137=NEW` allowed those checks to configure.
+* BRL-CAD's staging directory must participate in `CMAKE_FIND_ROOT_PATH`,
+  alongside the target sysroot.  Otherwise its package searches miss the
+  target headers and libraries it has copied into its build tree.
+* Native helper discovery must use `noinstall/host`, including `strclear`,
+  parser generators, Tcl, and Qt tools.  Target libraries must continue to
+  use the target installation/staging prefix.
+* Target runtime probes need a runner, verified toolchain-specific results,
+  or conversion to compile/link checks where those suffice.  Current probes
+  include STL linkage, basename/dirname behavior, `%z`, static arrays, and
+  builtin alloca.  Reconfiguring after a failed probe can retain false
+  results; a later successful configure is not sufficient validation.
+* The configure-time `dreport` executable and build-time `btclsh` cannot be
+  run directly on the host when built for Windows.  Tcl indexing needs a
+  native BRL-CAD interpreter with its supporting libraries and extensions.
+
 clang-cl target Tcl still needs a replacement for the native Windows
 batch/nmake path and reports an explicit error during a cross build.
 System Tcl/Tk validation also cannot run target extensions on the host and
-is rejected.  Native Tcl alone does not supply BRL-CAD's `btclsh`, which
-needs native BRL-CAD libraries and extensions.  Qt host tools, other BRL-CAD
-generators, and target runtime probes still need integration before a complete
-Windows build can be claimed.
+is rejected.  Other BRL-CAD generators and target runtime probes still need
+integration before a complete Windows build can be claimed.
