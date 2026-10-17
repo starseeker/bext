@@ -166,26 +166,54 @@ function(bext_run_rpath_update files)
   endif ()
 endfunction()
 
-function(bext_run_text_replace files target replacement)
-  if (NOT files OR "${target}" STREQUAL "")
-    return()
-  endif ()
-
-  set(text_paths)
-  foreach(relative ${files})
-    list(APPEND text_paths "${BEXT_INSTALL_ROOT}/${relative}")
+function(bext_text_path_forms outvar)
+  set(forms)
+  foreach(root IN LISTS ARGN)
+    if("${root}" STREQUAL "")
+      continue()
+    endif()
+    cmake_path(ABSOLUTE_PATH root NORMALIZE OUTPUT_VARIABLE absolute)
+    file(REAL_PATH "${root}" canonical)
+    foreach(form "${root}" "${absolute}" "${canonical}")
+      cmake_path(NATIVE_PATH form native_form)
+      list(APPEND forms "${form}" "${native_form}")
+    endforeach()
   endforeach()
-  set(file_list "${BEXT_BINARY_ROOT}/CMakeFiles/bext-text-files.txt")
-  bext_write_file_list(file_list "${file_list}" text_paths)
-  execute_process(
-    COMMAND "${BEXT_STRCLEAR}" -p --files "${file_list}" "${target}" "${replacement}"
-    RESULT_VARIABLE result
-    OUTPUT_VARIABLE output
-    ERROR_VARIABLE error
-  )
-  if (NOT result EQUAL 0)
-    message(FATAL_ERROR "strclear text replacement failed for ${target}: ${error}${output}")
-  endif ()
+  list(REMOVE_DUPLICATES forms)
+  # A child sorts after its parent; replace the most specific prefixes first.
+  list(SORT forms ORDER DESCENDING)
+  set(${outvar} "${forms}" PARENT_SCOPE)
+endfunction()
+
+function(bext_rewrite_text_paths files)
+  bext_text_path_forms(install_roots "${BEXT_INSTALL_ROOT}")
+  bext_text_path_forms(build_roots
+    "${BEXT_SOURCE_ROOT}" "${BEXT_BINARY_ROOT}" "${BEXT_NOINSTALL_ROOT}")
+  foreach(relative IN LISTS files)
+    set(path "${BEXT_INSTALL_ROOT}/${relative}")
+    file(READ "${path}" original)
+    # Protect both existing install paths and replacements from later passes.
+    # Keep the temporary marker in memory, and avoid collisions with the file.
+    set(marker "@BEXT_CANONICAL_INSTALL_PREFIX@")
+    string(FIND "${original}" "${marker}" marker_position)
+    while(NOT marker_position EQUAL -1)
+      string(APPEND marker "_")
+      string(FIND "${original}" "${marker}" marker_position)
+    endwhile()
+    set(rewritten "${original}")
+    foreach(root IN LISTS install_roots)
+      string(REPLACE "${root}" "${marker}" rewritten "${rewritten}")
+    endforeach()
+    foreach(root IN LISTS build_roots)
+      if(NOT "${root}" STREQUAL "")
+        string(REPLACE "${root}" "${marker}" rewritten "${rewritten}")
+      endif()
+    endforeach()
+    string(REPLACE "${marker}" "${BEXT_INSTALL_ROOT}" rewritten "${rewritten}")
+    if(NOT rewritten STREQUAL original)
+      file(WRITE "${path}" "${rewritten}")
+    endif()
+  endforeach()
 endfunction()
 
 file(MAKE_DIRECTORY "${BEXT_BINARY_ROOT}/CMakeFiles")
@@ -369,13 +397,7 @@ list(SORT plain_text_files)
 # Replace paths that only have meaning while bext is being built.  Keep the
 # install prefix intact: downstream projects replace this canonical prefix
 # with their own staging prefix after copying the finalized tree.
-set(text_paths ${text_files})
-foreach(clear_target
-    "${BEXT_SOURCE_ROOT}"
-    "${BEXT_BINARY_ROOT}"
-    "${BEXT_NOINSTALL_ROOT}")
-  bext_run_text_replace("${text_paths}" "${clear_target}" "${BEXT_INSTALL_ROOT}")
-endforeach()
+bext_rewrite_text_paths("${text_files}")
 
 # Clear paths before restoring the canonical bext RPATH.  Clearing the install
 # root after the RPATH update would also clear the newly written RPATH.
