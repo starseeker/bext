@@ -106,6 +106,31 @@ jobs:
             -DSTEPCODE_HOST_ROOT="$GITHUB_WORKSPACE/build/noinstall/host"
           cmake --build consumer-stepcode --verbose
 
+      - name: Build Windows Qt with native tools
+        if: matrix.compiler == 'llvm-mingw'
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: 2
+        run: |
+          cmake -S . -B build -DUSE_QT=ON -DBEXT_QT_JOBS=2
+          cmake --build build --parallel 2 --target Qt6Svg_BLD-install
+          cmake -DBEXT_TEST_ROOT="$RUNNER_TEMP/finalize-prefix" \
+            -DBEXT_STRCLEAR="$GITHUB_WORKSPACE/build/noinstall/host/bin/strclear" \
+            -P CMake/tests/finalize_install.cmake
+          cmake -DBEXT_INSTALL_ROOT="$GITHUB_WORKSPACE/build/install" \
+            -DBEXT_MANIFEST="$GITHUB_WORKSPACE/build/bext-install-manifest.json" \
+            -DBEXT_SOURCE_ROOT="$GITHUB_WORKSPACE" \
+            -DBEXT_BINARY_ROOT="$GITHUB_WORKSPACE/build" \
+            -DBEXT_NOINSTALL_ROOT="$GITHUB_WORKSPACE/build/noinstall" \
+            -DBEXT_STRCLEAR="$GITHUB_WORKSPACE/build/noinstall/host/bin/strclear" \
+            -DBEXT_SYSTEM_NAME=Windows -DBIN_DIR=bin -DLIB_DIR=lib \
+            -P CMake/FinalizeInstall.cmake
+          cmake -S CMake/tests/qt_consumer -B consumer-qt -G Ninja \
+            -DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/CMake/toolchains/windows-llvm-mingw.cmake" \
+            -DBEXT_TOOLCHAIN_ROOT="$RUNNER_TEMP/llvm-mingw" \
+            -DBEXT_QT_PREFIX="$GITHUB_WORKSPACE/build/install" \
+            -DQT_HOST_PATH="$GITHUB_WORKSPACE/build/noinstall/host/qt"
+          cmake --build consumer-qt --verbose
+
       - name: Upload diagnostic logs
         if: failure()
         uses: actions/upload-artifact@v4
@@ -120,3 +145,4 @@ jobs:
             consumer/**/CMakeConfigureLog.yaml
             consumer-nurbs/**/CMakeConfigureLog.yaml
             consumer-stepcode/**/CMakeConfigureLog.yaml
+            consumer-qt/**/CMakeConfigureLog.yaml
