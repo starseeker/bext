@@ -145,8 +145,15 @@ macro(bext_initialize_build_contexts)
         string(APPEND _bext_host_cache "${_bext_entry}")
       endif ()
     endforeach ()
-    bext_cache_entry(_bext_entry CMAKE_TOOLCHAIN_FILE "${BEXT_HOST_TOOLCHAIN_FILE}")
-    string(APPEND _bext_host_cache "${_bext_entry}")
+    if (BEXT_HOST_TOOLCHAIN_FILE)
+      bext_cache_entry(_bext_entry CMAKE_TOOLCHAIN_FILE "${BEXT_HOST_TOOLCHAIN_FILE}")
+      string(APPEND _bext_host_cache "${_bext_entry}")
+    else ()
+      # Some projects inspect a defined toolchain file before project(), even
+      # when its value is empty.  Native builds have no such file to inspect.
+      string(APPEND _bext_host_cache
+        "unset(CMAKE_TOOLCHAIN_FILE CACHE)\nunset(CMAKE_TOOLCHAIN_FILE)\n")
+    endif ()
     bext_cache_entry(_bext_entry CMAKE_PREFIX_PATH "${BEXT_HOST_INSTALL_PREFIX};${BEXT_HOST_PREFIX_PATH}")
     string(APPEND _bext_host_cache "${_bext_entry}")
     string(APPEND _bext_host_cache "set(CMAKE_FIND_USE_PACKAGE_REGISTRY OFF CACHE BOOL \"\" FORCE)\n")
