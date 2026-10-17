@@ -1,3 +1,4 @@
+cmake_minimum_required(VERSION 3.26)
 set(CONFIG_FILE configure)
 set(ENV_VARS)
 set(CONFIG_EXTRA_OPTS)
@@ -13,26 +14,49 @@ if (WIN32)
 endif (WIN32)
 
 # If we're not on Windows, set some environment variables
-if (NOT WIN32)
+if (NOT WIN32 AND NOT "@CMAKE_CROSSCOMPILING@")
   set(qt_runtime_dirs ${QT_XMIN_RUNTIME_DIRS} "@CMAKE_BUNDLE_INSTALL_PREFIX@/@LIB_DIR@")
   string(JOIN ":" qt_runtime_path ${qt_runtime_dirs})
   set(ENV{LD_LIBRARY_PATH} "${qt_runtime_path}")
   set(ENV{CPPFLAGS} "-I@CMAKE_BUNDLE_INSTALL_PREFIX@/@INCLUDE_DIR@")
   set(ENV{LDFLAGS} "-L@CMAKE_BUNDLE_INSTALL_PREFIX@/@LIB_DIR@")
-endif (NOT WIN32)
+endif ()
 
 # Qt has its own solution for zlib and png - rather than trying to
 # coax it into using ours, just go with their solution:
 # https://doc.qt.io/qt-6/configure-options.html
 set(CONFIG_EXTRA_OPTS ${CONFIG_EXTRA_OPTS} -qt-zlib -qt-libpng)
+if (BEXT_QT_TARGET_SYSTEM_NAME STREQUAL "Windows")
+  # A Unix host's wayland-scanner otherwise enables a tool package that the
+  # Windows Qt platform does not use and the minimal host Qt does not build.
+  list(APPEND CONFIG_EXTRA_OPTS -no-feature-qtwaylandscanner)
+endif ()
 
 # Qt's configure wrapper performs a nested CMake configure.  Preserve the
 # toolchain selected for bext instead of allowing another compiler on PATH to
 # produce an ABI-incompatible Qt build.
 list(APPEND QT_CMAKE_OPTS
+  -C "@BEXT_TARGET_CACHE@"
+  -G "@CMAKE_GENERATOR@"
   "-DCMAKE_C_COMPILER=@CMAKE_C_COMPILER@"
   "-DCMAKE_CXX_COMPILER=@CMAKE_CXX_COMPILER@"
 )
+if ("@CMAKE_CROSSCOMPILING@")
+  file(STRINGS "@QT_UPSTREAM_SOURCE_DIR@/.cmake.conf" qt_version_line
+    REGEX "^set\\(QT_REPO_MODULE_VERSION ")
+  string(REGEX MATCH "[0-9]+[.][0-9]+[.][0-9]+" qt_version "${qt_version_line}")
+  execute_process(COMMAND "@CMAKE_COMMAND@"
+    -S "@CMAKE_CURRENT_SOURCE_DIR@/host_probe"
+    -B "@CMAKE_CURRENT_BINARY_DIR@/qt6-host-probe"
+    -C "@BEXT_HOST_CACHE@"
+    "-DBEXT_HOST_QT_PATH=@BEXT_QT_HOST_PATH@"
+    "-DBEXT_QT_VERSION=${qt_version}"
+    RESULT_VARIABLE host_probe_result)
+  if (NOT host_probe_result EQUAL 0)
+    message(FATAL_ERROR "Native Qt tools must run on the build host and match Qt ${qt_version}")
+  endif ()
+  list(APPEND QT_CMAKE_OPTS "-DQT_HOST_PATH=@BEXT_QT_HOST_PATH@")
+endif ()
 
 if (QT_XMIN_ENABLED)
   list(APPEND CONFIG_EXTRA_OPTS
@@ -94,13 +118,14 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   set(QT_EXPECTED_BUILD_TYPE "Debug")
   set(QT_EXPECTED_DEBUG "ON")
   set(QT_CONFIG_OPTS "-debug")
-elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-  set(QT_EXPECTED_BUILD_TYPE "Release")
+elseif (CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo|MinSizeRel)$")
+  set(QT_EXPECTED_BUILD_TYPE "${CMAKE_BUILD_TYPE}")
   set(QT_EXPECTED_DEBUG "OFF")
   set(QT_CONFIG_OPTS "-release")
 else ()
-  message(WARNING "Unexpected CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} preparing Qt6")
+  message(FATAL_ERROR "Unsupported CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} preparing Qt6")
 endif ("${CMAKE_BUILD_TYPE}" STREQUAL "" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+list(APPEND QT_CMAKE_OPTS "-DCMAKE_BUILD_TYPE=${QT_EXPECTED_BUILD_TYPE}")
 
 # Qt caches command-line feature choices separately from CMAKE_BUILD_TYPE.  If
 # a build directory previously configured for the other build type is reused,
@@ -129,8 +154,9 @@ if (EXISTS "${qt_cache}" AND DEFINED QT_EXPECTED_BUILD_TYPE)
   endif ()
 endif ()
 
+file(SHA256 "@BEXT_TARGET_CACHE@" qt_target_context_hash)
 set(qt_signature_material
-  "@QT_CONFIG_SIGNATURE@|${CONFIG_EXTRA_OPTS}|${QT_CMAKE_OPTS}|${QT_CONFIG_OPTS}")
+  "@QT_CONFIG_SIGNATURE@|${qt_target_context_hash}|${CONFIG_EXTRA_OPTS}|${QT_CMAKE_OPTS}|${QT_CONFIG_OPTS}")
 string(SHA256 qt_expected_signature "${qt_signature_material}")
 if (EXISTS "${qt_signature_file}")
   file(READ "${qt_signature_file}" qt_cached_signature)
@@ -158,7 +184,7 @@ if (QT_CMAKE_OPTS)
   list(APPEND qt_configure_args -- ${QT_CMAKE_OPTS})
 endif ()
 
-execute_process(COMMAND @QT_SOURCE_DIR@/${CONFIG_FILE} ${qt_configure_args} RESULT_VARIABLE QT_RET WORKING_DIRECTORY @QT_BUILD_DIR@ OUTPUT_VARIABLE MSG ERROR_VARIABLE MSG)
+execute_process(COMMAND "@QT_SOURCE_DIR@/${CONFIG_FILE}" ${qt_configure_args} RESULT_VARIABLE QT_RET WORKING_DIRECTORY "@QT_BUILD_DIR@" OUTPUT_VARIABLE MSG ERROR_VARIABLE MSG)
 
 if (QT_RET)
   message(FATAL_ERROR "Qt configure failed: ${MSG}\n")
@@ -219,14 +245,14 @@ if (QT_XMIN_ENABLED)
   endif ()
 endif ()
 
-# does a window-capable backend exists for this host OS?
+# Check the target platform; WIN32/APPLE in script mode describe the host.
 set(qt_has_window_gui OFF)
 if (feature_gui STREQUAL "ON")
-  if (WIN32 AND feature_direct2d STREQUAL "ON")
+  if (BEXT_QT_TARGET_SYSTEM_NAME STREQUAL "Windows" AND qpa_platform STREQUAL "windows")
     set(qt_has_window_gui ON)
-  elseif (APPLE AND qpa_platform STREQUAL "cocoa")
+  elseif (BEXT_QT_TARGET_SYSTEM_NAME STREQUAL "Darwin" AND qpa_platform STREQUAL "cocoa")
     set(qt_has_window_gui ON)
-  elseif (UNIX AND NOT APPLE AND (feature_xcb STREQUAL "ON" OR feature_wayland_client STREQUAL "ON"))
+  elseif (feature_xcb STREQUAL "ON" OR feature_wayland_client STREQUAL "ON")
     set(qt_has_window_gui ON)
   endif()
 endif()

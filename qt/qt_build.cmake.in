@@ -1,25 +1,28 @@
+cmake_minimum_required(VERSION 3.26)
 # Build-time Qt tools must load the Qt libraries from this build first.  The
 # install prefix may contain an older Qt from a previous superbuild run, and
 # putting that directory first makes tools such as qtwaylandscanner fail with
 # missing Qt symbol versions while a newer Qt is being built.
-if (NOT WIN32)
+if (NOT WIN32 AND NOT "@CMAKE_CROSSCOMPILING@")
   set(qt_runtime_dirs "@QT_XMIN_RUNTIME_DIRS@" "@QT_BUILD_DIR@/@LIB_DIR@" "@CMAKE_BUNDLE_INSTALL_PREFIX@/@LIB_DIR@")
   string(JOIN ":" qt_runtime_path ${qt_runtime_dirs})
   set(ENV{LD_LIBRARY_PATH} "${qt_runtime_path}")
-endif (NOT WIN32)
+endif ()
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  set(QT_CMAKE_OPTS "--config Debug --parallel 8")
-elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-  set(QT_CMAKE_OPTS "--config Release --parallel 8")
+  set(QT_CMAKE_OPTS --config Debug)
+elseif (CMAKE_BUILD_TYPE MATCHES "^(Release|RelWithDebInfo|MinSizeRel)$")
+  set(QT_CMAKE_OPTS --config "${CMAKE_BUILD_TYPE}")
 else ()
-  message(WARNING "Unexpected CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} building Qt6")
+  message(FATAL_ERROR "Unsupported CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} building Qt6")
 endif ("${CMAKE_BUILD_TYPE}" STREQUAL "" OR "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+list(APPEND QT_CMAKE_OPTS --parallel @BEXT_QT_JOBS@)
 
-execute_process(COMMAND "@CMAKE_COMMAND@" --build . ${QT_CMAKE_OPTS} RESULT_VARIABLE QT_RET WORKING_DIRECTORY "@QT_BUILD_DIR@" OUTPUT_VARIABLE MSG ERROR_VARIABLE MSG)
+execute_process(COMMAND "@CMAKE_COMMAND@" --build . ${QT_CMAKE_OPTS}
+  RESULT_VARIABLE QT_RET WORKING_DIRECTORY "@QT_BUILD_DIR@")
 
 if (QT_RET)
-  message(FATAL_ERROR "Qt build failed: ${MSG}\n")
+  message(FATAL_ERROR "Qt build failed with status ${QT_RET}; see the build log above")
 endif (QT_RET)
 
 if ("@QT_XMIN_ENABLED@" STREQUAL "ON")
@@ -33,7 +36,7 @@ if ("@QT_XMIN_ENABLED@" STREQUAL "ON")
   endif ()
 endif ()
 
-message("Qt build succeeded: ${MSG}\n")
+message(STATUS "Qt build succeeded")
 
 # Local Variables:
 # tab-width: 8
