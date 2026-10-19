@@ -360,13 +360,82 @@ function(_bext_git_command out_command out_shallow)
   set(${out_shallow} "${shallow_args}" PARENT_SCOPE)
 endfunction()
 
+function(_bext_git_report_clones trace git_command working_directory report_directory)
+  # Observe actual clone attempts, including recursive clones, retries, and
+  # failures. A configured mapping alone does not mean a clone took place.
+  file(STRINGS "${trace}" events REGEX "\"event\":\"child_start\"")
+  foreach(event IN LISTS events)
+    string(JSON count ERROR_VARIABLE error LENGTH "${event}" argv)
+    if (error OR count LESS 4)
+      continue()
+    endif ()
+    string(JSON command GET "${event}" argv 1)
+    if (NOT command STREQUAL "clone")
+      continue()
+    endif ()
+    # Submodule clones pass -- <repository> <directory> as their final args.
+    math(EXPR separator "${count} - 3")
+    string(JSON separator GET "${event}" argv ${separator})
+    if (NOT separator STREQUAL "--")
+      continue()
+    endif ()
+    math(EXPR index "${count} - 2")
+    string(JSON original GET "${event}" argv ${index})
+    math(EXPR index "${count} - 1")
+    string(JSON destination GET "${event}" argv ${index})
+    get_filename_component(destination "${destination}" ABSOLUTE BASE_DIR "${working_directory}")
+
+    # Ask Git rather than guessing from Bext's rules: user rewrites participate
+    # too. --get-url does not contact the repository. Clone ignores the parent
+    # repository's local config, so use the cloned repo, or an isolated directory
+    # when a failed clone has already removed its destination.
+    if (EXISTS "${destination}/.git")
+      set(context "${destination}")
+    else ()
+      set(context "${report_directory}")
+    endif ()
+    get_filename_component(ceiling "${report_directory}" DIRECTORY)
+    execute_process(
+      COMMAND "${CMAKE_COMMAND}" -E env "GIT_CEILING_DIRECTORIES=${ceiling}" --
+        ${git_command} ls-remote --get-url -- "${original}"
+      WORKING_DIRECTORY "${context}"
+      RESULT_VARIABLE result OUTPUT_VARIABLE effective ERROR_QUIET
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    file(RELATIVE_PATH path "${working_directory}" "${destination}")
+    _bext_git_redact(original_display "${original}")
+    if (NOT result STREQUAL "0")
+      message(STATUS "bext Git clone source (${path}): ${original_display} (effective URL unavailable)")
+    elseif (NOT original STREQUAL effective)
+      _bext_git_redact(effective_display "${effective}")
+      message(STATUS "bext Git clone source (${path}): ${original_display} -> ${effective_display} (remapped)")
+    else ()
+      message(STATUS "bext Git clone source (${path}): ${original_display} (no URL remapping)")
+    endif ()
+  endforeach()
+endfunction()
+
 function(bext_git_submodule_update working_directory)
   _bext_git_command(git_command shallow_args)
+  # This trace preserves parallel output and discovers nested clone attempts
+  # without changing Git's recursive update behavior. Keep the intermediate
+  # output private: command arguments may contain credentials, unlike our
+  # redacted summary.
+  string(RANDOM LENGTH 16 ALPHABET 0123456789abcdef report_id)
+  set(report_directory "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/bext-git-${report_id}")
+  file(MAKE_DIRECTORY "${report_directory}")
+  file(CHMOD "${report_directory}" PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE)
+  set(trace "${report_directory}/clones.json")
+  file(WRITE "${trace}" "")
+  file(CHMOD "${trace}" PERMISSIONS OWNER_READ OWNER_WRITE)
   execute_process(
-    COMMAND ${git_command} submodule update --init --recursive ${shallow_args} ${ARGN}
+    COMMAND "${CMAKE_COMMAND}" -E env "GIT_TRACE2_EVENT=${trace}" --
+      ${git_command} submodule update --init --recursive ${shallow_args} ${ARGN}
     WORKING_DIRECTORY "${working_directory}"
     RESULT_VARIABLE git_result
   )
+  _bext_git_report_clones("${trace}" "${git_command}" "${working_directory}" "${report_directory}")
+  file(REMOVE_RECURSE "${report_directory}")
   # Configure callers may tolerate missing optional nested sources; bootstrap
   # needs the result so it cannot report success after an incomplete checkout.
   set(BEXT_GIT_UPDATE_RESULT "${git_result}" PARENT_SCOPE)
