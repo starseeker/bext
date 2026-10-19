@@ -175,6 +175,22 @@ already-rewritten destination will not apply a second time.  Normal user Git
 configuration still participates, so avoid competing rules for identical
 source prefixes outside bext.
 
+After each CMake-driven submodule update, bext reports the source of every clone
+attempt, including recursive clones and failed attempts.  For remapped URLs,
+the summary shows the original URL and Git's effective fetch URL, including any
+user Git rewrites, for example:
+
+```text
+-- bext Git clone source (zlib/zlib): https://github.com/BRL-CAD/zlib -> file:///srv/git/zlib.git (remapped)
+```
+
+Clones without URL remapping are labeled accordingly.  Credentials and URL
+queries are redacted.  These summaries follow Git's own progress messages,
+which may still show canonical URLs; a clone source report does not indicate
+that the clone succeeded.  Updates that do not clone anything produce no clone
+source reports.  Resolving the effective URL for reporting does not contact
+the server.
+
 Relative nested submodule URLs resolve against the parent's stored remote URL,
 which remains canonical.  For example, remapping OIDN to `RenderKit/oidn` still
 resolves its `../mkl-dnn.git` URL to `https://github.com/BRL-CAD/mkl-dnn.git`.
