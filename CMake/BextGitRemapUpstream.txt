@@ -5,7 +5,7 @@
 # Full-line comments only; no variable expansion or includes.
 
 [submodules]
-appleseed/appleseed = https://github.com/starseeker/appleseed
+appleseed/appleseed = https://git.brlcad.org/BRL-CAD/appleseed
 assetimport/assimp = https://github.com/assimp/assimp
 astyle/astyle = https://gitlab.com/saalen/astyle
 boost/boost = https://github.com/boostorg/boost
@@ -15,7 +15,7 @@ deflate/libdeflate = https://github.com/ebiggers/libdeflate
 eigen/eigen = https://gitlab.com/libeigen/eigen.git
 embree/embree = https://github.com/RenderKit/embree
 expat/libexpat = https://github.com/libexpat/libexpat
-flexbison/bison = https://github.com/starseeker/bison
+flexbison/bison = https://git.brlcad.org/BRL-CAD/bison
 flexbison/flex = https://github.com/westes/flex
 flexbison/winflexbison = https://github.com/lexxmark/winflexbison
 fmt/fmt = https://github.com/fmtlib/fmt
@@ -24,18 +24,18 @@ gte/GeometricTools = https://github.com/davideberly/GeometricTools
 icu/icu = https://github.com/unicode-org/icu
 ispc/ispc = https://github.com/ispc/ispc
 itk/itk = https://github.com/tcltk/itk
-iwidgets/iwidgets = https://github.com/starseeker/iwidgets
+iwidgets/iwidgets = https://git.brlcad.org/BRL-CAD/iwidgets
 jpeg/libjpeg-turbo = https://github.com/libjpeg-turbo/libjpeg-turbo
-lemon/lemon = https://github.com/starseeker/lemon
+lemon/lemon = https://git.brlcad.org/BRL-CAD/lemon
 lief/LIEF = https://github.com/lief-project/LIEF
 llvm/llvm-project = https://github.com/llvm/llvm-project
 lmdb/lmdb = https://github.com/LMDB/lmdb
 lz4/lz4 = https://github.com/lz4/lz4
 manifold/manifold = https://github.com/elalish/manifold
 minizip-ng/minizip-ng = https://github.com/zlib-ng/minizip-ng
-mmesh/mmesh = https://github.com/starseeker/mmesh
-ncurses/ncurses = https://github.com/starseeker/ncurses
-netpbm/netpbm = https://github.com/starseeker/netpbm
+mmesh/mmesh = https://git.brlcad.org/BRL-CAD/mmesh
+ncurses/ncurses = https://git.brlcad.org/BRL-CAD/ncurses
+netpbm/netpbm = https://git.brlcad.org/BRL-CAD/netpbm
 oidn/oidn = https://github.com/RenderKit/oidn
 onetbb/oneTBB = https://github.com/uxlfoundation/oneTBB
 opencolorio/OpenColorIO = https://github.com/AcademySoftwareFoundation/OpenColorIO
@@ -45,38 +45,38 @@ openimageio/oiio = https://github.com/AcademySoftwareFoundation/OpenImageIO
 opennurbs/opennurbs = https://github.com/mcneel/opennurbs
 openvdb/openvdb = https://github.com/AcademySoftwareFoundation/openvdb
 osl/OpenShadingLanguage = https://github.com/AcademySoftwareFoundation/OpenShadingLanguage
-osmesa/osmesa = https://github.com/starseeker/osmesa
+osmesa/osmesa = https://git.brlcad.org/BRL-CAD/osmesa
 ospray/ospray = https://github.com/RenderKit/ospray
 patch/patch = https://github.com/shannonbooth/patch
-perplex/perplex = https://github.com/starseeker/perplex
-plief/plief = https://github.com/starseeker/plief
+perplex/perplex = https://git.brlcad.org/BRL-CAD/perplex
+plief/plief = https://git.brlcad.org/BRL-CAD/plief
 png/libpng = https://github.com/pnggroup/libpng
 poissonrecon/PoissonRecon = https://github.com/mkazhdan/PoissonRecon
 proj/PROJ = https://github.com/OSGeo/PROJ
 pugixml/pugixml = https://github.com/zeux/pugixml
 pystring/pystring = https://github.com/imageworks/pystring
-qt/qt = https://github.com/starseeker/qt
+qt/qt = https://git.brlcad.org/BRL-CAD/qt
 re2c/re2c = https://github.com/skvadrik/re2c
-regex/regex = https://github.com/starseeker/regex
+regex/regex = https://git.brlcad.org/BRL-CAD/regex
 rkcommon/rkcommon = https://github.com/RenderKit/rkcommon
-sqlite3/sqlite3 = https://github.com/starseeker/sqlite3
+sqlite3/sqlite3 = https://git.brlcad.org/BRL-CAD/sqlite3
 stepcode/stepcode = https://github.com/stepcode/stepcode
-strclear/strclear = https://github.com/starseeker/strclear
+strclear/strclear = https://git.brlcad.org/BRL-CAD/strclear
 tcl/tcl = https://github.com/tcltk/tcl
-tiff/libtiff = https://github.com/starseeker/libtiff
+tiff/libtiff = https://git.brlcad.org/BRL-CAD/libtiff
 tinygltf/tinygltf = https://github.com/syoyo/tinygltf
 tk/tk = https://github.com/tcltk/tk
-tkhtml/tkhtml = https://github.com/starseeker/tkhtml
-tktable/tktable = https://github.com/starseeker/tktable
+tkhtml/tkhtml = https://git.brlcad.org/BRL-CAD/tkhtml
+tktable/tktable = https://git.brlcad.org/BRL-CAD/tktable
 xerces-c/xerces-c = https://github.com/apache/xerces-c
 yaml-cpp/yaml-cpp = https://github.com/jbeder/yaml-cpp
-zlib/zlib = https://github.com/starseeker/zlib
+zlib/zlib = https://git.brlcad.org/BRL-CAD/zlib
 zstd/zstd = https://github.com/facebook/zstd
 
 [urls]
 # Optional URL-prefix rules also reach recursive submodules.
 # Preserve trailing slashes when replacing directory prefixes.
-https://github.com/BRL-CAD/ = https://github.com/starseeker/
+https://github.com/BRL-CAD/ = https://git.brlcad.org/BRL-CAD/
 
 # OIDN resolves these relative URLs against its canonical BRL-CAD remote.
 https://github.com/BRL-CAD/mkl-dnn.git = https://github.com/RenderKit/mkl-dnn.git
