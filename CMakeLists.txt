@@ -199,6 +199,7 @@ endif (EXT_BUILD_VERBOSE)
 # https://www.kitware.com/cmake-superbuilds-git-submodules) via CMake's
 # ExternalProject_Add feature to manage 3rd party builds
 include(ExternalProject)
+include(BextReleaseBuild)
 
 # ExternalProject source convention:
 #   * Use SOURCE_DIR for an existing submodule built directly in place when no
@@ -245,6 +246,9 @@ function(ExternalProject_Add name)
       endif ("${ARGV${ep_i}}" STREQUAL "CMAKE_ARGS")
     endforeach(ep_i RANGE 1 ${ep_last})
   endif (ARGC GREATER 1)
+  if (BEXT_BUILD_JOBS AND "CMAKE_ARGS" IN_LIST ARGN AND NOT "BUILD_COMMAND" IN_LIST ARGN)
+    string(APPEND ep_call " BUILD_COMMAND [==[${CMAKE_COMMAND}]==] --build <BINARY_DIR> --config [==[$<CONFIG>]==] --parallel ${BEXT_BUILD_JOBS}")
+  endif ()
   string(APPEND ep_call ")")
   cmake_language(EVAL CODE "${ep_call}")
   if (TARGET ${name}-install)
@@ -263,6 +267,9 @@ math(EXPR pcnt "${N} / 2")
 if (NOT pcnt)
   set(pcnt 1)
 endif (NOT pcnt)
+if (BEXT_BUILD_JOBS)
+  set(pcnt ${BEXT_BUILD_JOBS})
+endif ()
 
 # External projects driven by a direct make invocation set their own -j value
 # below.  Do not also pass down the top-level generator's jobserver state:
@@ -783,6 +790,7 @@ endif ()
 # while preserving the top-level configure metadata and install trees.
 ###############################################################################
 register_external_project_clean_targets()
+bext_register_work_cleanup()
 
 
 ###############################################################################

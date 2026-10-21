@@ -190,6 +190,33 @@ cmake ../brlcad \
   -DCMAKE_BUILD_TYPE=Release
 ```
 
+# Disposable release builds
+
+For builds with immutable inputs, `BEXT_DISCARD_WORK=ON` removes generated
+source copies and object directories after each successful dependency install.
+Configure with `EXT_BUILD_ALWAYS=OFF`; installed `install/` and `noinstall/`
+outputs, logs, and ExternalProject completion stamps are retained. The original
+source checkout is never removed. Failed dependencies retain their work trees.
+Tcl, Tk, and Itk work trees are deferred until all installs and finalization
+finish; `BEXT_DEFER_DISCARD` selects these exceptions by target name.
+
+`BEXT_BUILD_JOBS` sets jobs inside CMake, Qt, and direct Make builds.
+`BEXT_LINK_JOBS` defaults to one and controls LLVM link parallelism with Ninja.
+Limit the outer build independently to avoid multiplying concurrent subbuilds:
+
+```sh
+cmake -S . -B build/release -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DENABLE_ALL=ON -DEXT_BUILD_ALWAYS=OFF -DBEXT_DISCARD_WORK=ON \
+  -DBEXT_BUILD_JOBS=4 -DBEXT_LINK_JOBS=1
+cmake --build build/release --parallel 1
+```
+
+This mode trades incremental rebuilds for disk savings. Reuse completed outputs
+with identical inputs. Start a new build/output tree when changing compilers,
+options, sources, or dependency revisions. Validate newly added dependencies
+for references to discarded work trees before enabling them in a release.
+The normal `clean` target still resets completion stamps for rebuilding.
+
 # More information
 
 * [INSTALL.md](INSTALL.md) - platform prerequisites, checkout options, and
