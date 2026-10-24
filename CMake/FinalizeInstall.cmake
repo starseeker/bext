@@ -444,7 +444,8 @@ bext_content_fingerprints(noinstall_content "${BEXT_NOINSTALL_ROOT}" "noinstall"
 file(SHA256 "${BEXT_MANIFEST}" manifest_digest)
 string(SHA256 content_digest
   "${installed_content}${noinstall_content}M ${manifest_digest}\n")
-set(content_stamp "${BEXT_BINARY_ROOT}/bext-content-stamp")
+cmake_path(GET BEXT_INSTALL_ROOT PARENT_PATH bext_output_root)
+set(content_stamp "${bext_output_root}/bext-content-stamp")
 file(WRITE "${content_stamp}.tmp" "${content_digest}\n")
 file(COPY_FILE "${content_stamp}.tmp" "${content_stamp}" ONLY_IF_DIFFERENT)
 file(REMOVE "${content_stamp}.tmp")

@@ -96,11 +96,19 @@ if (NOT WIN32)
       # Preserve the shipped Autotools outputs when ExternalProject copies the
       # source tree.  This prevents make from requiring Autoconf, Autoheader,
       # or Automake from the host.
-      CONFIGURE_COMMAND ${CMAKE_COMMAND};-E;touch_nocreate;${BISON_SRC_DIR}/configure;${BISON_SRC_DIR}/lib/config.in.h;${BISON_SRC_DIR}/Makefile.in
+      CONFIGURE_COMMAND ${CMAKE_COMMAND};-E;touch_nocreate;${BISON_SRC_DIR}/aclocal.m4;${BISON_SRC_DIR}/configure;${BISON_SRC_DIR}/lib/config.in.h;${BISON_SRC_DIR}/Makefile.in
       # The release checkout includes generated Info documentation.  Do not
       # require host Texinfo when staging changes file timestamp ordering.
       COMMAND ${CMAKE_COMMAND} -E env ${BISON_CONFIGURE_ENV} ${BISON_SRC_DIR}/configure --prefix=${CMAKE_NOBUNDLE_INSTALL_PREFIX}
-      COMMAND ${CMAKE_COMMAND} -E touch_nocreate ${BISON_SRC_DIR}/doc/bison.info
+      # The generated parser must be newer than its grammar to bootstrap
+      # without an existing Bison executable. Preserve the shipped scanners too.
+      COMMAND ${CMAKE_COMMAND} -E touch_nocreate
+        ${BISON_SRC_DIR}/src/parse-gram.c
+        ${BISON_SRC_DIR}/src/parse-gram.h
+        ${BISON_SRC_DIR}/src/scan-code.c
+        ${BISON_SRC_DIR}/src/scan-gram.c
+        ${BISON_SRC_DIR}/src/scan-skel.c
+        ${BISON_SRC_DIR}/doc/bison.info
       BUILD_COMMAND ${BEXT_MAKE_COMMAND} -j${pcnt}
       INSTALL_COMMAND ${BEXT_MAKE_COMMAND} -j1 install
       DEPENDS ${ZLIB_TARGET}

@@ -21,10 +21,10 @@ if (NOT WIN32)
   set(ENV{LDFLAGS} "-L@CMAKE_BUNDLE_INSTALL_PREFIX@/@LIB_DIR@")
 endif (NOT WIN32)
 
-# Qt has its own solution for zlib and png - rather than trying to
-# coax it into using ours, just go with their solution:
+# Use Qt's bundled libraries to avoid incidental system dependencies and
+# sharing our separate zlib and PNG builds:
 # https://doc.qt.io/qt-6/configure-options.html
-set(CONFIG_EXTRA_OPTS ${CONFIG_EXTRA_OPTS} -qt-zlib -qt-libpng)
+set(CONFIG_EXTRA_OPTS ${CONFIG_EXTRA_OPTS} -qt-zlib -qt-libpng -qt-pcre)
 
 # Qt's configure wrapper performs a nested CMake configure.  Preserve the
 # toolchain selected for bext instead of allowing another compiler on PATH to
