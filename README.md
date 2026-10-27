@@ -65,6 +65,20 @@ When `bext` is driven from a BRL-CAD build, `BRLCAD_COMPONENTS` can further
 narrow some BRL-CAD-related packages to only those needed by the requested
 component set.
 
+# Experimental dependencies
+
+When a dependency is being evaluated, sometimes it will be given a preliminary
+directory without setting up a submodule.  Testing will then take place using
+local source snapshots - this avoids having bext history depend on a repo
+SHA1 before we're sure we need it, but gives us a place to store patch files
+and build logic that are needed to properly build it as part of bext.
+
+Within `USE_BRLCAD_EXTRA`, each wrapper enables its build when the source is
+present and disables it when absent. No checkout or download is attempted.
+
+If the decision is made to incorporate such a dependency, its submodule will
+be added and it will become part of the "regular" bext setup.
+
 # Official profiles
 
 The supported configure entry points are:

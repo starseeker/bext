@@ -658,6 +658,10 @@ add_project(opennurbs GROUPS "BRLCAD")
 # https://github.com/starseeker/osmesa
 add_project(osmesa GROUPS "BRLCAD")
 
+# litehtml - HTML layout engine
+# https://github.com/litehtml/litehtml
+add_project(litehtml GROUPS "BRLCAD_EXTRA")
+
 # Bullet3 - collision detection/multi-physics simulation library
 # https://github.com/bulletphysics/bullet3
 add_project(bullet GROUPS "BRLCAD_EXTRA")

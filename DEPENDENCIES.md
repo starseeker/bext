@@ -42,6 +42,7 @@ selection further.
 | `jpeg` | `USE_APPLESEED`, `USE_BRLCAD`, `USE_GDAL` | `install` | `patch` | [repository](https://github.com/BRL-CAD/libjpeg-turbo) |
 | `lemon` | `USE_BRLCAD` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/lemon) |
 | `lief` | `USE_BRLCAD` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/LIEF) |
+| `litehtml` | `USE_BRLCAD_EXTRA` | `install` | `patch` | [repository](https://github.com/litehtml/litehtml) |
 | `llvm` | `USE_APPLESEED`, `USE_OSPRAY` | `install` | `patch`, `zlib` | [repository](https://github.com/BRL-CAD/llvm-project) |
 | `lmdb` | `USE_BRLCAD` | `install` | `patch` | [repository](https://github.com/BRL-CAD/lmdb) |
 | `lz4` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/lz4) |

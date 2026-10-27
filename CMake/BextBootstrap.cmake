@@ -55,6 +55,11 @@ foreach(line ${project_lines})
     set(include_project TRUE)
   endif ()
 
+  file(READ "${bext_root}/${project_name}/CMakeLists.txt" wrapper_text)
+  if (wrapper_text MATCHES "bext_local_source\\(")
+    continue()
+  endif ()
+
   if (include_project)
     list(APPEND project_paths "${project_name}")
   endif (include_project)
