@@ -831,6 +831,8 @@ add_custom_target(update_dependency_docs
   VERBATIM
 )
 
+# Logic for generating a Software Bill of Materials (SBOM)
+# from bext repository information.
 set(BEXT_SBOM_OUTPUT "${CMAKE_BINARY_DIR}/bext.spdx.json")
 add_custom_command(
   OUTPUT "${BEXT_SBOM_OUTPUT}"
