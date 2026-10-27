@@ -1,0 +1,28 @@
+--- a/CMake/options.cmake
++++ b/CMake/options.cmake
+@@ -741,21 +741,16 @@
+     else()
+       find_library(OPENGL_LIB OpenGL)
+     endif(FLTK_BACKEND_X11)
+-    get_filename_component(PATH_TO_GLLIB ${OPENGL_LIB} DIRECTORY)
+     find_library(GLU_LIB GLU)
+-    get_filename_component(PATH_TO_GLULIB ${GLU_LIB} DIRECTORY)
+-    set(OPENGL_LIBRARIES -L${PATH_TO_GLULIB} -L${PATH_TO_GLLIB})
++    set(OPENGL_LIBRARIES ${OPENGL_LIB})
++    if(GLU_LIB)
++      list(PREPEND OPENGL_LIBRARIES ${GLU_LIB})
++    endif()
+     if(APPLE)
+       # FIXME: we should find a better way to resolve this issue:
+       # with GL, must use XQuartz libX11 else "Insufficient GL support"
+       set(OPENGL_LIBRARIES ${OPENGL_LIBRARIES} -lX11)
+     endif(APPLE)
+-    set(OPENGL_LIBRARIES ${OPENGL_LIBRARIES} -lGLU)
+-    if(FLTK_BACKEND_X11)
+-      set(OPENGL_LIBRARIES ${OPENGL_LIBRARIES} -lGL)
+-    else()
+-      set(OPENGL_LIBRARIES ${OPENGL_LIBRARIES} -lOpenGL)
+-    endif(FLTK_BACKEND_X11)
+     find_path(OPENGL_INCLUDE_DIR NAMES GL/gl.h OpenGL/gl.h HINTS ${X11_INCLUDE_DIR})
+     unset(HAVE_GL_GLU_H CACHE)
+     find_file(HAVE_GL_GLU_H GL/glu.h PATHS ${X11_INCLUDE_DIR})

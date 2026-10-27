@@ -5,7 +5,7 @@ if (ENABLE_FLTK)
   RegisterDeps(FLTK)
 
   set(fltk_patch_command PATCH_COMMAND
-    ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS} -i ${CMAKE_CURRENT_SOURCE_DIR}/fltk_terminal_wrap.patch)
+    ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS} -i ${CMAKE_CURRENT_SOURCE_DIR}/fltk_gl_libraries.patch)
   set(fltk_xmin_args)
   if (BEXT_XMIN_ROOT)
     list(APPEND fltk_patch_command COMMAND
@@ -50,7 +50,11 @@ if (ENABLE_FLTK)
     STEP_TARGETS install
   )
   ExternalProject_Add_StepDependencies(FLTK_BLD patch
-    ${CMAKE_CURRENT_SOURCE_DIR}/fltk_terminal_wrap.patch)
+    ${CMAKE_CURRENT_SOURCE_DIR}/fltk_gl_libraries.patch)
+  if (BEXT_XMIN_ROOT)
+    ExternalProject_Add_StepDependencies(FLTK_BLD patch
+      ${CMAKE_CURRENT_SOURCE_DIR}/fltk_xmin.patch)
+  endif ()
   TargetInstallDeps(FLTK FLTK_DEPENDS)
 
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/fltk/COPYING
