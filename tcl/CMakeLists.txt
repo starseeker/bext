@@ -20,6 +20,16 @@ set(TCL_MAJOR_VERSION 8)
 set(TCL_MINOR_VERSION 6)
 set(TCL_VERSION "${TCL_MAJOR_VERSION}.${TCL_MINOR_VERSION}")
 
+set(BEXT_TCL_DATABASE_PACKAGES_DEFAULT ON)
+if (USE_BRLCAD)
+  set(BEXT_TCL_DATABASE_PACKAGES_DEFAULT OFF)
+endif ()
+option(BEXT_TCL_ENABLE_DATABASE_PACKAGES
+  "Build and install Tcl's bundled SQLite and TDBC packages"
+  ${BEXT_TCL_DATABASE_PACKAGES_DEFAULT}
+  )
+unset(BEXT_TCL_DATABASE_PACKAGES_DEFAULT)
+
 
 # FIXME: Build currently fails hard on MacOS if allowed to use system Tcl
 # due to incompatibilities with Itcl and inconsistent flags, so we turn
@@ -161,6 +171,26 @@ if (ENABLE_TCL)
   unset(TCL_PATCH_FILE)
   unset(TCL_PATCH_FILES)
 
+  set(TCL_EXCLUDED_PACKAGES)
+  set(TCL_PACKAGE_PRUNE_COMMANDS)
+  if (NOT BEXT_TCL_ENABLE_DATABASE_PACKAGES)
+    set(TCL_EXCLUDED_PACKAGES
+      sqlite3.53.0
+      tdbc1.1.13
+      tdbcmysql1.1.13
+      tdbcodbc1.1.13
+      tdbcpostgres1.1.13
+      tdbcsqlite3-1.1.13
+      )
+    foreach (TCL_EXCLUDED_PACKAGE IN LISTS TCL_EXCLUDED_PACKAGES)
+      list(APPEND TCL_PACKAGE_PRUNE_COMMANDS
+        COMMAND ${CMAKE_COMMAND} -E remove_directory
+          <SOURCE_DIR>/pkgs/${TCL_EXCLUDED_PACKAGE}
+        )
+    endforeach ()
+    unset(TCL_EXCLUDED_PACKAGE)
+  endif ()
+
   if (TARGET ZLIB_BLD)
     set(ZLIB_SETUP_COMMANDS
       ${PATCH_EXECUTABLE};-E;-p1;${PATCH_OPTIONS};-i;${CMAKE_CURRENT_SOURCE_DIR}/tcl-z_brl.patch
@@ -202,12 +232,14 @@ if (ENABLE_TCL)
       "${CMAKE_CURRENT_SOURCE_DIR}/tcl/pkgs/*"
       )
     foreach (TCL_PACKAGE_SOURCE_DIR ${TCL_PACKAGE_SOURCE_DIRS})
+      get_filename_component(TCL_PACKAGE_NAME "${TCL_PACKAGE_SOURCE_DIR}" NAME)
+      list(FIND TCL_EXCLUDED_PACKAGES "${TCL_PACKAGE_NAME}" TCL_PACKAGE_EXCLUDED)
       set(TCL_PACKAGE_MAKEFILE "${TCL_PACKAGE_SOURCE_DIR}/win/makefile.vc")
-      if (EXISTS "${TCL_PACKAGE_MAKEFILE}" AND
+      if (TCL_PACKAGE_EXCLUDED EQUAL -1 AND
+          EXISTS "${TCL_PACKAGE_MAKEFILE}" AND
           NOT EXISTS "${TCL_PACKAGE_SOURCE_DIR}/manifest.uuid")
         file(READ "${TCL_PACKAGE_MAKEFILE}" TCL_PACKAGE_MAKEFILE_CONTENTS)
         if (TCL_PACKAGE_MAKEFILE_CONTENTS MATCHES "manifest[.]uuid")
-          get_filename_component(TCL_PACKAGE_NAME "${TCL_PACKAGE_SOURCE_DIR}" NAME)
           list(APPEND TCL_PACKAGE_MANIFEST_SETUP_COMMANDS
             COMMAND ${CMAKE_COMMAND} -E copy
               ${CMAKE_CURRENT_SOURCE_DIR}/package_manifest.uuid
@@ -227,6 +259,7 @@ if (ENABLE_TCL)
     endforeach ()
     unset(TCL_PACKAGE_MAKEFILE_CONTENTS)
     unset(TCL_PACKAGE_MAKEFILE)
+    unset(TCL_PACKAGE_EXCLUDED)
     unset(TCL_PACKAGE_NAME)
     unset(TCL_PACKAGE_SOURCE_DIR)
     unset(TCL_PACKAGE_SOURCE_DIRS)
@@ -251,6 +284,7 @@ if (ENABLE_TCL)
       URL "${CMAKE_CURRENT_SOURCE_DIR}/tcl"
       BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
       PATCH_COMMAND ${TCL_PATCH_COMMAND}
+      ${TCL_PACKAGE_PRUNE_COMMANDS}
       # Tcl's fallback zlib can silently supply headers even when we intend to
       # use z_brl.  Remove it only from this staging copy after patching Tcl to
       # require z_brl; the pristine source distribution remains untouched.
@@ -284,6 +318,7 @@ if (ENABLE_TCL)
       BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
       PATCH_COMMAND ${TCL_PATCH_COMMAND}
       ${TCL_PACKAGE_MANIFEST_SETUP_COMMANDS}
+      ${TCL_PACKAGE_PRUNE_COMMANDS}
       CONFIGURE_COMMAND ""
       BINARY_DIR ${TCL_SRC_DIR}/win
       BUILD_COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tcl_build.cmake
