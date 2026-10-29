@@ -43,7 +43,7 @@ endif (WIN32 AND ENABLE_FLEX)
 if (NOT WIN32)
   if (ENABLE_FLEX)
 
-    git_submodule_init(flex configure)
+    git_submodule_init(flex autogen.sh)
 
     set(FLEX_DEPENDS PATCH)
     TargetVars(FLEX_DEPENDS)
