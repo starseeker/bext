@@ -4,6 +4,33 @@ bext_enable(OIDN)
 if (ENABLE_OIDN)
 
   git_submodule_init(oidn CMakeLists.txt)
+  if (NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/oidn/weights/rt_alb.tza")
+    bext_git_submodule_update("${CMAKE_CURRENT_SOURCE_DIR}/oidn" -- weights)
+    if (NOT BEXT_GIT_UPDATE_RESULT STREQUAL "0" OR
+        NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/oidn/weights/rt_alb.tza")
+      message(FATAL_ERROR "OIDN requires its pinned weights submodule")
+    endif ()
+  endif ()
+
+  find_program(OIDN_GIT_EXECUTABLE git REQUIRED)
+  execute_process(
+    COMMAND "${OIDN_GIT_EXECUTABLE}" rev-parse HEAD
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/oidn/weights"
+    RESULT_VARIABLE OIDN_WEIGHTS_REVISION_RESULT
+    OUTPUT_VARIABLE OIDN_WEIGHTS_REVISION
+    ERROR_VARIABLE OIDN_WEIGHTS_REVISION_ERROR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  string(LENGTH "${OIDN_WEIGHTS_REVISION}" OIDN_WEIGHTS_REVISION_LENGTH)
+  if (NOT OIDN_WEIGHTS_REVISION_RESULT STREQUAL "0" OR
+      NOT OIDN_WEIGHTS_REVISION_LENGTH EQUAL 40 OR
+      NOT OIDN_WEIGHTS_REVISION MATCHES "^[0-9a-fA-F]+$")
+    message(FATAL_ERROR
+      "Unable to determine the pinned OIDN weights revision: ${OIDN_WEIGHTS_REVISION_ERROR}")
+  endif ()
+  set(OIDN_WEIGHTS_MEDIA_ROOT
+    "https://media.githubusercontent.com/media/RenderKit/oidn-weights"
+    CACHE STRING "Raw Git LFS content endpoint for the pinned OIDN weights")
 
   RegisterDeps(OIDN)
 
@@ -21,6 +48,11 @@ if (ENABLE_OIDN)
   ExternalProject_Add(OIDN_BLD
     URL "${CMAKE_CURRENT_SOURCE_DIR}/oidn"
     BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+    PATCH_COMMAND "${CMAKE_COMMAND}"
+      -DOIDN_WEIGHTS_DIR:PATH=<SOURCE_DIR>/weights
+      -DOIDN_WEIGHTS_REVISION:STRING=${OIDN_WEIGHTS_REVISION}
+      -DOIDN_WEIGHTS_MEDIA_ROOT:STRING=${OIDN_WEIGHTS_MEDIA_ROOT}
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/HydrateWeights.cmake"
     CMAKE_ARGS
     -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
     # OIDN's debug builds are broken upstream, so it is always built Release -
