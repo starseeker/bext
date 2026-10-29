@@ -1,7 +1,7 @@
 diff -Naur sqlite3.orig/CMakeLists.txt SQLITE3_BLD/CMakeLists.txt
 --- sqlite3.orig/CMakeLists.txt	1969-12-31 19:00:00.000000000 -0500
 +++ SQLITE3_BLD/CMakeLists.txt	2023-09-17 12:22:10.246469660 -0400
-@@ -0,0 +1,105 @@
+@@ -0,0 +1,110 @@
 +#                     C M A K E L I S T S . T X T
 +# BRL-CAD
 +#
@@ -91,13 +91,18 @@ diff -Naur sqlite3.orig/CMakeLists.txt SQLITE3_BLD/CMakeLists.txt
 +  ARCHIVE DESTINATION ${LIB_DIR}
 +  )
 +
-+add_executable(sqlite3 sqlite3.c shell.c)
-+target_link_libraries(sqlite3 Threads::Threads ${M_LIBRARY})
-+install(TARGETS sqlite3
-+  RUNTIME DESTINATION ${BIN_DIR}
-+  LIBRARY DESTINATION ${LIB_DIR}
-+  ARCHIVE DESTINATION ${LIB_DIR}
-+  )
++option(SQLITE_BUILD_SHELL "Build and install the sqlite3 command-line shell" ON)
++set(SQLITE_SHELL_INSTALL_DIR "${BIN_DIR}" CACHE PATH
++  "Install directory for the sqlite3 command-line shell")
++if (SQLITE_BUILD_SHELL)
++  add_executable(sqlite3 sqlite3.c shell.c)
++  target_link_libraries(sqlite3 Threads::Threads ${M_LIBRARY})
++  install(TARGETS sqlite3
++    RUNTIME DESTINATION ${SQLITE_SHELL_INSTALL_DIR}
++    LIBRARY DESTINATION ${SQLITE_SHELL_INSTALL_DIR}
++    ARCHIVE DESTINATION ${SQLITE_SHELL_INSTALL_DIR}
++    )
++endif (SQLITE_BUILD_SHELL)
 +
 +install(FILES sqlite3.h sqlite3ext.h DESTINATION ${INCLUDE_DIR})
 +
