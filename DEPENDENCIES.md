@@ -29,7 +29,7 @@ selection further.
 | `clipper2` | `USE_BRLCAD` | `install` | `patch` | [repository](https://github.com/BRL-CAD/Clipper2.git) |
 | `deflate` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/libdeflate) |
 | `eigen` | `USE_BRLCAD`, `USE_APPLESEED` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/eigen) |
-| `embree` | `USE_APPLESEED`, `USE_OSPRAY` | `install` | `boost`, `onetbb`, `patch`, `zlib` | [repository](https://github.com/BRL-CAD/embree) |
+| `embree` | `USE_APPLESEED`, `USE_OSPRAY` | `install` | `onetbb`, `patch`, `zlib` | [repository](https://github.com/BRL-CAD/embree) |
 | `expat` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/libexpat) |
 | `flexbison` | `USE_APPLESEED`, `USE_OSPRAY` | `noinstall` | — | [repository](https://github.com/BRL-CAD/winflexbison) |
 | `fmt` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/fmt) |
@@ -41,8 +41,8 @@ selection further.
 | `iwidgets` | `USE_TCL` | `install` | `patch`, `itk` | [repository](https://github.com/BRL-CAD/iwidgets) |
 | `jpeg` | `USE_APPLESEED`, `USE_BRLCAD`, `USE_GDAL` | `install` | `patch` | [repository](https://github.com/BRL-CAD/libjpeg-turbo) |
 | `lemon` | `USE_BRLCAD` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/lemon) |
-| `lief` | `USE_BRLCAD` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/LIEF) |
-| `litehtml` | `USE_BRLCAD_EXTRA` | `install` | `patch` | [repository](https://github.com/litehtml/litehtml) |
+| `lief` | always considered | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/LIEF) |
+| `litehtml` | `USE_BRLCAD` | `install` | `patch` | [repository](https://github.com/BRL-CAD/litehtml) |
 | `llvm` | `USE_APPLESEED`, `USE_OSPRAY` | `install` | `patch`, `zlib` | [repository](https://github.com/BRL-CAD/llvm-project) |
 | `lmdb` | `USE_BRLCAD` | `install` | `patch` | [repository](https://github.com/BRL-CAD/lmdb) |
 | `lz4` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/lz4) |
@@ -64,7 +64,7 @@ selection further.
 | `ospray` | `USE_OSPRAY` | `install` | `embree`, `ispc`, `oidn`, `onetbb`, `patch`, `rkcommon` | [repository](https://github.com/BRL-CAD/ospray) |
 | `patch` | always considered | `noinstall` | — | [repository](https://github.com/BRL-CAD/patch) |
 | `perplex` | `USE_BRLCAD` | `noinstall` | `patch`, `lemon`, `re2c` | [repository](https://github.com/BRL-CAD/perplex) |
-| `plief` | `USE_BRLCAD` | `noinstall` | `lief`, `patch` | [repository](https://github.com/BRL-CAD/plief) |
+| `plief` | always considered | `noinstall` | `lief`, `patch` | [repository](https://github.com/BRL-CAD/plief) |
 | `png` | `USE_APPLESEED`, `USE_BRLCAD`, `USE_TCL` | `install` | `patch`, `zlib` | [repository](https://github.com/BRL-CAD/libpng) |
 | `poissonrecon` | `USE_BRLCAD` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/PoissonRecon) |
 | `proj` | `USE_GDAL` | `install` | `patch`, `sqlite3` | [repository](https://github.com/BRL-CAD/PROJ) |
@@ -76,7 +76,7 @@ selection further.
 | `rkcommon` | `USE_OSPRAY` | `install` | `onetbb`, `patch` | [repository](https://github.com/BRL-CAD/rkcommon) |
 | `sqlite3` | `USE_GDAL` | `install` | `patch` | [repository](https://github.com/BRL-CAD/sqlite3.git) |
 | `stepcode` | `USE_BRLCAD_EXTRA` | `install` | `lemon`, `patch`, `perplex`, `re2c` | [repository](https://github.com/BRL-CAD/stepcode) |
-| `strclear` | `USE_BRLCAD` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/strclear) |
+| `strclear` | always considered | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/strclear) |
 | `tcl` | `USE_TCL` | `install` | `patch`, `zlib` | [repository](https://github.com/BRL-CAD/tcl.git) |
 | `tiff` | `USE_APPLESEED`, `USE_GDAL` | `install` | `jpeg`, `patch`, `zlib` | [repository](https://github.com/BRL-CAD/libtiff) |
 | `tinygltf` | `USE_BRLCAD` | `install` | `patch` | [repository](https://github.com/BRL-CAD/tinygltf.git) |

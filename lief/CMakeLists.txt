@@ -1,8 +1,9 @@
 # LIEF is a cross platform library which can parse, modify and abstract ELF, PE
 # and MachO binary formats.  We use it to define a tool for rpath manipulation.
 
-# Untested on Windows
-if (NOT MSVC)
+# plief currently uses LIEF only for ELF processing.  Windows needs no RPATH
+# rewriting, and macOS uses the native otool/install_name_tool workflow.
+if (NOT MSVC AND NOT APPLE)
 
   bext_enable(LIEF)
 
@@ -62,7 +63,7 @@ if (NOT MSVC)
     TargetInstallDeps(LIEF LIEF_DEPENDS)
 
   endif (ENABLE_LIEF)
-endif (NOT MSVC)
+endif (NOT MSVC AND NOT APPLE)
 
 # Local Variables:
 # tab-width: 8

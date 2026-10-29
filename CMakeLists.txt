@@ -459,13 +459,14 @@ add_project(astyle GROUPS "BRLCAD")
 add_project(lemon GROUPS "BRLCAD")
 add_project(re2c GROUPS "BRLCAD")
 add_project(perplex GROUPS "BRLCAD")
-add_project(strclear GROUPS "BRLCAD")
+# Finalization classifies and sanitizes every bundle with strclear, regardless
+# of which consumer group selected the installed dependencies.
+add_project(strclear)
 
-# RPATH editing - LIEF has the core capabilities, and plief exposes them via
-# a command line utility with patchelf compatible options, so we can drop
-# either patchelf or plief into our upstream workflows.
-add_project(lief GROUPS "BRLCAD")
-add_project(plief GROUPS "BRLCAD")
+# ELF finalization uses LIEF through plief for binary classification and RPATH
+# repair.  Their project logic limits local builds to supported host platforms.
+add_project(lief)
+add_project(plief)
 
 ###############################################################################
 # Build logic is broken out per-library, but the ordering is important.  Some
