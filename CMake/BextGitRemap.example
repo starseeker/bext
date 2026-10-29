@@ -31,6 +31,7 @@
 # llvm/llvm-project = https://github.com/llvm/llvm-project
 # lmdb/lmdb = https://github.com/LMDB/lmdb
 # lz4/lz4 = https://github.com/lz4/lz4
+# m4/m4 = https://github.com/starseeker/m4
 # manifold/manifold = https://github.com/elalish/manifold
 # minizip-ng/minizip-ng = https://github.com/zlib-ng/minizip-ng
 # mmesh/mmesh = https://github.com/starseeker/mmesh

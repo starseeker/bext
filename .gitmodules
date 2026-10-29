@@ -365,3 +365,8 @@
 [submodule "litehtml/litehtml"]
 	path = litehtml/litehtml
 	url = https://github.com/BRL-CAD/litehtml
+[submodule "m4/m4"]
+	path = m4/m4
+	url = https://github.com/BRL-CAD/m4.git
+	ignore = dirty
+	shallow = true

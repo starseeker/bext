@@ -36,7 +36,7 @@ selection further.
 | `gdal` | `USE_GDAL` | `install` | `patch`, `png`, `proj`, `sqlite3`, `tiff`, `zlib` | [repository](https://github.com/BRL-CAD/gdal) |
 | `gte` | `USE_BRLCAD` | `noinstall` | `patch` | [repository](https://github.com/BRL-CAD/GeometricTools) |
 | `icu` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/icu) |
-| `ispc` | `USE_OSPRAY` | `install` | `bison`, `flex`, `patch`, `llvm`, `ncurses`, `zlib` | [repository](https://github.com/BRL-CAD/ispc) |
+| `ispc` | `USE_OSPRAY` | `install` | `bison`, `flex`, `patch`, `llvm`, `m4`, `ncurses`, `zlib` | [repository](https://github.com/BRL-CAD/ispc) |
 | `itk` | `USE_TCL` | `install` | `patch`, `tcl`, `tk` | [repository](https://github.com/BRL-CAD/itk) |
 | `iwidgets` | `USE_TCL` | `install` | `patch`, `itk` | [repository](https://github.com/BRL-CAD/iwidgets) |
 | `jpeg` | `USE_APPLESEED`, `USE_BRLCAD`, `USE_GDAL` | `install` | `patch` | [repository](https://github.com/BRL-CAD/libjpeg-turbo) |
@@ -46,6 +46,7 @@ selection further.
 | `llvm` | `USE_APPLESEED`, `USE_OSPRAY` | `install` | `patch`, `zlib` | [repository](https://github.com/BRL-CAD/llvm-project) |
 | `lmdb` | `USE_BRLCAD` | `install` | `patch` | [repository](https://github.com/BRL-CAD/lmdb) |
 | `lz4` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/lz4) |
+| `m4` | `USE_OSPRAY` | `noinstall` | `bison`, `flex` | [repository](https://github.com/starseeker/m4.git) |
 | `manifold` | `USE_BRLCAD` | `install` | `patch`, `clipper2` | [repository](https://github.com/BRL-CAD/manifold.git) |
 | `minizip-ng` | `USE_APPLESEED` | `install` | `patch`, `zlib`, `zstd` | [repository](https://github.com/BRL-CAD/minizip-ng) |
 | `mmesh` | `USE_BRLCAD` | `install` | `patch` | [repository](https://github.com/BRL-CAD/mmesh.git) |

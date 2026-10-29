@@ -387,15 +387,6 @@ endif (USE_APPLESEED OR USE_OSPRAY)
 ###############################################################################
 
 ###############################################################################
-# For the moment, we can't bootstrap GNU m4 readily, and ISPC *needs* it for
-# compilation.  (Ideally we would enhance the OpenBSD m4 to support the ISPC
-# features needed, but as of 2023-09-18 it doesn't have them yet.)
-###############################################################################
-if (USE_OSPRAY)
-  find_program(M4_EXECUTABLE m4 REQUIRED)
-endif (USE_OSPRAY)
-
-###############################################################################
 # Applying patch files cross platform is a challenging problem due to the
 # shortage of portable tools and issues with LF vs CRLF files - see
 # https://gitlab.kitware.com/cmake/cmake/-/issues/16854 for more background on
@@ -448,6 +439,11 @@ if (USE_APPLESEED OR USE_OSPRAY)
   set(BISON_ADDED 1)
 
 endif (USE_APPLESEED OR USE_OSPRAY)
+
+# ISPC requires GNU-compatible m4 behavior.  Prefer a system m4 when one is
+# available, and otherwise build the portable OpenBSD implementation after its
+# Flex and Bison prerequisites have been resolved.
+add_project(m4 GROUPS "OSPRAY")
 
 ###############################################################################
 # Build tools are used during compilation, but are not bundled or distributed
