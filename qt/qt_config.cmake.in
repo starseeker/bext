@@ -7,6 +7,20 @@ set(QT_XMIN_ROOT "@QT_XMIN_ROOT@")
 set(QT_XMIN_DIR "@QT_XMIN_DIR@")
 set(QT_XMIN_RUNTIME_DIRS "@QT_XMIN_RUNTIME_DIRS@")
 
+# bext consumes Qt under the open-source LGPL option.  Do not configure a
+# commercial build, and omit tests and examples that are not needed by BRL-CAD.
+list(APPEND CONFIG_EXTRA_OPTS
+  -opensource
+  -confirm-license
+  -nomake examples
+  -nomake tests
+)
+list(APPEND QT_CMAKE_OPTS
+  "-DQT_BUILD_EXAMPLES=OFF"
+  "-DQT_BUILD_TESTS=OFF"
+  "-DFEATURE_developer_build=OFF"
+)
+
 # Windows uses a different file
 if (WIN32)
   set(CONFIG_FILE configure.bat)
@@ -57,10 +71,6 @@ if (QT_XMIN_ENABLED)
     -qt-libjpeg
     -no-dbus
     -no-glib
-    -nomake
-    examples
-    -nomake
-    tests
     -opengl
     desktop
   )
