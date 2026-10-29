@@ -258,6 +258,11 @@ math(EXPR pcnt "${N} / 2")
 if (NOT pcnt)
   set(pcnt 1)
 endif (NOT pcnt)
+set(BEXT_BUILD_JOBS "${pcnt}" CACHE STRING "Parallel jobs for dependency builds")
+if (NOT BEXT_BUILD_JOBS MATCHES "^[1-9][0-9]*$")
+  message(FATAL_ERROR "BEXT_BUILD_JOBS must be a positive integer")
+endif ()
+set(pcnt "${BEXT_BUILD_JOBS}")
 
 # External projects driven by a direct make invocation set their own -j value
 # below.  Do not also pass down the top-level generator's jobserver state:
