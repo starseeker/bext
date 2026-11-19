@@ -30,7 +30,11 @@ if (ENABLE_ITK)
 
   set(ITK_PATCH_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/itk.patch"
-    "${CMAKE_CURRENT_SOURCE_DIR}/itk_install.patch")
+    "${CMAKE_CURRENT_SOURCE_DIR}/itk_install.patch"
+    "${CMAKE_CURRENT_SOURCE_DIR}/itk_stubs.patch")
+  if (CMAKE_CROSSCOMPILING AND WIN32 AND NOT MSVC AND NOT CMAKE_HOST_WIN32)
+    list(APPEND ITK_PATCH_FILES "${CMAKE_CURRENT_SOURCE_DIR}/itk_mingw.patch")
+  endif ()
   git_submodule_init(itk configure PATCH_FILES ${ITK_PATCH_FILES})
   list(GET ITK_PATCH_FILES 0 ITK_SOURCE_PATCH_FILE)
   list(GET ITK_PATCH_FILES 1 ITK_INSTALL_PATCH_FILE)

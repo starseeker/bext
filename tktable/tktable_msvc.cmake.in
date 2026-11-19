@@ -2,6 +2,10 @@ if (NOT TKTABLE_TARGET MATCHES "^(all|install)$")
   message(FATAL_ERROR "TKTABLE_TARGET must be all or install")
 endif ()
 
+if (NOT WIN32)
+  message(FATAL_ERROR "The Tktable nmake build requires a Windows host")
+endif ()
+
 set(script "@CMAKE_CURRENT_BINARY_DIR@/tktable_${TKTABLE_TARGET}.bat")
 file(WRITE "${script}"
   "@echo off\n"

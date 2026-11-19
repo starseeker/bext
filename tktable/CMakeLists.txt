@@ -73,10 +73,22 @@ if (ENABLE_TKTABLE)
         get_filename_component(TKTABLE_${package}_CONFIG_DIR "${TKTABLE_${package}_CONFIG}" DIRECTORY)
       endif ()
     endforeach()
-    configure_file(tktable_configure.cmake.in tktable_configure.cmake @ONLY)
-    set(tktable_configure_command ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tktable_configure.cmake)
-    set(tktable_build_command ${BEXT_MAKE_COMMAND} -j${pcnt} binaries)
-    set(tktable_install_command ${BEXT_MAKE_COMMAND} -j1 INSTALL_OPTIONS=-C install-binaries install-libraries)
+    if (CMAKE_CROSSCOMPILING)
+      include("${CMAKE_SOURCE_DIR}/CMake/BextMingw.cmake")
+      bext_mingw_context()
+      configure_file(tktable_mingw.cmake.in tktable_mingw.cmake @ONLY)
+      set(tktable_configure_command ${CMAKE_COMMAND} -DBEXT_ACTION=configure
+        -P ${CMAKE_CURRENT_BINARY_DIR}/tktable_mingw.cmake)
+      set(tktable_build_command ${CMAKE_COMMAND} -DBEXT_ACTION=build
+        -P ${CMAKE_CURRENT_BINARY_DIR}/tktable_mingw.cmake)
+      set(tktable_install_command ${CMAKE_COMMAND} -DBEXT_ACTION=install
+        -P ${CMAKE_CURRENT_BINARY_DIR}/tktable_mingw.cmake)
+    else ()
+      configure_file(tktable_configure.cmake.in tktable_configure.cmake @ONLY)
+      set(tktable_configure_command ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tktable_configure.cmake)
+      set(tktable_build_command ${BEXT_MAKE_COMMAND} -j${pcnt} binaries)
+      set(tktable_install_command ${BEXT_MAKE_COMMAND} -j1 INSTALL_OPTIONS=-C install-binaries install-libraries)
+    endif ()
   endif ()
 
   ExternalProject_Add(TKTABLE_BLD
@@ -94,7 +106,13 @@ if (ENABLE_TKTABLE)
     STEP_TARGETS install
     )
 
-  if (NOT MSVC)
+  if (CMAKE_CROSSCOMPILING AND NOT MSVC)
+    ExternalProject_Add_StepDependencies(TKTABLE_BLD configure
+      "${CMAKE_CURRENT_BINARY_DIR}/tktable_mingw.cmake" ${BEXT_MINGW_INPUTS})
+    if (BEXT_HOST_TCL_TARGET)
+      ExternalProject_Add_StepDependencies(TKTABLE_BLD configure ${BEXT_HOST_TCL_TARGET})
+    endif ()
+  elseif (NOT MSVC)
     ExternalProject_Add_StepDependencies(TKTABLE_BLD configure
       "${CMAKE_CURRENT_BINARY_DIR}/tktable_configure.cmake")
   endif ()
@@ -118,6 +136,15 @@ if (ENABLE_TKTABLE)
     list(PREPEND tktable_test_command
       "${CMAKE_COMMAND}" -E env --modify "LD_LIBRARY_PATH=path_list_prepend:${BEXT_XMIN_ROOT}/lib"
       "${TKTABLE_XMIN_RUN}" --server "${TKTABLE_XMIN_SERVER}" --screen "${tktable_test_screen}" --)
+  endif ()
+  if (CMAKE_CROSSCOMPILING)
+    if (CMAKE_CROSSCOMPILING_EMULATOR)
+      list(PREPEND tktable_test_command ${CMAKE_CROSSCOMPILING_EMULATOR})
+    else ()
+      set(tktable_test_command "${CMAKE_COMMAND}" -E echo
+        "TKTABLE_check requires CMAKE_CROSSCOMPILING_EMULATOR to run target Tcl/Tk."
+        COMMAND "${CMAKE_COMMAND}" -E false)
+    endif ()
   endif ()
   add_custom_target(TKTABLE_check
     COMMAND ${tktable_test_command}

@@ -1,0 +1,14 @@
+include("@BEXT_MINGW_ENV@")
+if (BEXT_ACTION STREQUAL "configure")
+  bext_mingw_run("@TKTABLE_BIN_DIR@" "@TKTABLE_SRC_DIR@/configure"
+    ${BEXT_MINGW_CONFIGURE_ARGS}
+    "--with-tcl=@TKTABLE_TCL_CONFIG_DIR@"
+    "--with-tk=@TKTABLE_TK_CONFIG_DIR@")
+elseif (BEXT_ACTION STREQUAL "build")
+  bext_mingw_make("@TKTABLE_BIN_DIR@" "@pcnt@" binaries)
+elseif (BEXT_ACTION STREQUAL "install")
+  bext_mingw_make("@TKTABLE_BIN_DIR@" 1
+    INSTALL_OPTIONS=-C install-binaries install-libraries)
+else ()
+  message(FATAL_ERROR "Unknown Tktable cross-build action: ${BEXT_ACTION}")
+endif ()
