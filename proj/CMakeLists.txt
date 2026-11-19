@@ -14,6 +14,8 @@ if (ENABLE_PROJ)
 
   RegisterDeps(PROJ)
 
+  # An empty EXE_SQLITE3 cache entry prevents PROJ's find_program call from
+  # searching for a system shell.  Always pass the selected executable.
   if (CMAKE_CROSSCOMPILING)
     if (NOT TARGET SQLITE3_HOST_BLD)
       bext_find_host_program(BEXT_HOST_SQLITE3 NAMES sqlite3 REQUIRED)
@@ -25,9 +27,6 @@ if (ENABLE_PROJ)
       endif ()
     endif ()
     set(PROJ_SQLITE3_EXECUTABLE "${BEXT_HOST_SQLITE3}")
-
-  # An empty EXE_SQLITE3 cache entry prevents PROJ's find_program call from
-  # searching for a system shell.  Always pass the selected executable.
   elseif (SQLITE3_TARGET)
     set(PROJ_SQLITE3_EXECUTABLE
       "${CMAKE_NOBUNDLE_INSTALL_PREFIX}/${BIN_DIR}/sqlite3${CMAKE_EXECUTABLE_SUFFIX}")

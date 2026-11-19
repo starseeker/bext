@@ -475,7 +475,7 @@
    va_list args
    )
  {
--#if defined(ON_COMPILER_CLANG) || defined(ON_RUNTIME_LINUX) || defined(ON_RUNTIME_WASM)
+-#if defined(ON_COMPILER_CLANG) || defined(ON_RUNTIME_LINUX) || defined(ON_RUNTIME_WASM) || defined(ON_RUNTIME_BSD)
 +#if !defined(ON_RUNTIME_WIN)
  #if defined(ON_RUNTIME_ANDROID) || defined(ON_RUNTIME_LINUX) || defined(ON_RUNTIME_WASM)
    if (nullptr == buffer || nullptr == format)
@@ -484,7 +484,7 @@
    local_buffer[local_buffer_count++] = 0;
  
    double x = value_on_failure;
--#if defined(ON_COMPILER_CLANG) || defined(ON_RUNTIME_LINUX) || defined(ON_RUNTIME_WASM)
+-#if defined(ON_COMPILER_CLANG) || defined(ON_RUNTIME_LINUX) || defined(ON_RUNTIME_WASM) || defined(ON_RUNTIME_BSD)
 +#if !defined(ON_RUNTIME_WIN)
  #if defined(ON_RUNTIME_ANDROID) || defined(ON_RUNTIME_LINUX) || defined(ON_RUNTIME_WASM)
    if (1 == sscanf(local_buffer, "%lg", &x))
@@ -493,7 +493,7 @@
    local_buffer[local_buffer_count++] = 0;
  
    double x = value_on_failure;
--#if defined(ON_COMPILER_CLANG) || defined(ON_RUNTIME_LINUX) || defined(ON_RUNTIME_WASM)
+-#if defined(ON_COMPILER_CLANG) || defined(ON_RUNTIME_LINUX) || defined(ON_RUNTIME_WASM) || defined(ON_RUNTIME_BSD)
 +#if !defined(ON_RUNTIME_WIN)
  #if defined(ON_RUNTIME_ANDROID) || defined(ON_RUNTIME_LINUX) || defined(ON_RUNTIME_WASM)
    if (1 == sscanf(local_buffer, "%lg", &x))

@@ -17,7 +17,10 @@ set(ENABLE_ONETBB "${ENABLE_ONETBB}" CACHE BOOL "Enable oneTBB build")
 
 if (ENABLE_ONETBB)
 
-  git_submodule_init(oneTBB CMakeLists.txt)
+  set(ONETBB_PATCH_FILES "${CMAKE_CURRENT_SOURCE_DIR}/onetbb_windows_loader.patch")
+  git_submodule_init(oneTBB CMakeLists.txt
+    PATCH_FILES ${ONETBB_PATCH_FILES}
+    PATCH_COMMAND_VAR ONETBB_PATCH_COMMAND)
 
   RegisterDeps(ONETBB)
 
@@ -36,8 +39,7 @@ if (ENABLE_ONETBB)
   ExternalProject_Add(ONETBB_BLD
     URL "${CMAKE_CURRENT_SOURCE_DIR}/oneTBB"
     BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
-    PATCH_COMMAND ${PATCH_EXECUTABLE} -E -p1 ${PATCH_OPTIONS}
-      -i "${CMAKE_CURRENT_SOURCE_DIR}/onetbb_windows_loader.patch"
+    PATCH_COMMAND ${ONETBB_PATCH_COMMAND}
     CMAKE_ARGS
     ${BUILD_TYPE_SPECIFIER}
     -DTBB_TEST=OFF
