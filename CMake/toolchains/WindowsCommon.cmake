@@ -32,6 +32,12 @@ function(bext_windows_tool variable)
     find_program(${variable} NAMES ${ARGN} NO_CMAKE_FIND_ROOT_PATH REQUIRED)
   endif ()
   set(${variable} "${${variable}}" PARENT_SCOPE)
+  # Nested compiler checks must retain explicit overrides, including tools
+  # such as llvm-mt which may not be present under BEXT_TOOLCHAIN_ROOT.
+  list(APPEND CMAKE_TRY_COMPILE_PLATFORM_VARIABLES "${variable}")
+  list(REMOVE_DUPLICATES CMAKE_TRY_COMPILE_PLATFORM_VARIABLES)
+  set(CMAKE_TRY_COMPILE_PLATFORM_VARIABLES
+    "${CMAKE_TRY_COMPILE_PLATFORM_VARIABLES}" PARENT_SCOPE)
 endfunction()
 
 macro(bext_windows_mingw_root)

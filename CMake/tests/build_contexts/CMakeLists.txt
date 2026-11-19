@@ -5,6 +5,8 @@ set(CMAKE_NOBUNDLE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/noinstall")
 set(CMAKE_BUNDLE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install")
 include("${bext_cmake}/BextBuildContexts.cmake")
 include("${bext_cmake}/BextExternalProject.cmake")
+set(BEXT_BUILD_JOBS 2)
+include("${bext_cmake}/BextReleaseBuild.cmake")
 
 # Include spaces and semicolons to check serialization across nested CMake
 # invocations.  The child verifies the complete list, including the empty item.
