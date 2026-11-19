@@ -37,9 +37,6 @@ if (CMAKE_CROSSCOMPILING AND NOT DISABLE_TCL)
     message(FATAL_ERROR "System Tcl/Tk validation is not available when cross compiling. Enable the bundled stack with ENABLE_TCL=ON, or disable Tcl with DISABLE_TCL=ON.")
   endif ()
   set(ENABLE_TCL ON CACHE BOOL "Enable tcl build" FORCE)
-  git_submodule_init(tcl unix/configure)
-  include("${CMAKE_SOURCE_DIR}/CMake/BextHostTcl.cmake")
-  bext_add_host_tcl("${CMAKE_CURRENT_SOURCE_DIR}/tcl")
 endif ()
 
 
@@ -135,8 +132,6 @@ if (ENABLE_TCL)
     if (NOT TARGET ZLIB_BLD)
       message(FATAL_ERROR "The Windows Tcl cross build requires bundled zlib (ENABLE_ZLIB=ON)")
     endif ()
-    include("${CMAKE_SOURCE_DIR}/CMake/BextMingw.cmake")
-    bext_mingw_context()
   endif ()
 
   set(TCL_PATCH_FILES
@@ -186,6 +181,16 @@ if (ENABLE_TCL)
     PATCH_FILES ${TCL_PATCH_FILES}
     INPUT_FILES ${TCL_INPUT_FILES}
     PATCH_COMMAND_VAR TCL_PATCH_COMMAND)
+  # Patch tracking may reset this wrapper's build directory. Declare the
+  # native project afterwards so its generated rules survive that reset.
+  if (CMAKE_CROSSCOMPILING)
+    include("${CMAKE_SOURCE_DIR}/CMake/BextHostTcl.cmake")
+    bext_add_host_tcl("${CMAKE_CURRENT_SOURCE_DIR}/tcl")
+  endif ()
+  if (TCL_MINGW_CROSS)
+    include("${CMAKE_SOURCE_DIR}/CMake/BextMingw.cmake")
+    bext_mingw_context()
+  endif ()
   if (BEXT_TCL_ENABLE_DATABASE_PACKAGES)
     configure_file("${TCL_SQLITE_SETUP_TEMPLATE}"
       "${CMAKE_CURRENT_BINARY_DIR}/tcl_sqlite3.cmake" @ONLY)

@@ -2,10 +2,11 @@
 cad_enable(QT "libqtcad")
 
 set(QT_EXTRA_PATCHES "" CACHE STRING "Additional patches to apply to bundled Qt6")
-list(PREPEND QT_EXTRA_PATCHES
+set(QT_BASE_PATCH_FILES
   "${CMAKE_CURRENT_SOURCE_DIR}/qt_metadata.patch"
   "${CMAKE_CURRENT_SOURCE_DIR}/qt_freebsd.patch"
   "${CMAKE_CURRENT_SOURCE_DIR}/qt_CVE-2026-105924.patch")
+list(PREPEND QT_EXTRA_PATCHES ${QT_BASE_PATCH_FILES})
 list(REMOVE_DUPLICATES QT_EXTRA_PATCHES)
 set(QT_XMIN_ROOT "" CACHE PATH "Installed Xmin SDK used by bundled Qt6")
 
@@ -40,57 +41,9 @@ if (ENABLE_QT)
 
   option(QT_ALLOW_HEADLESS "Allow building Qt without a window-capable platform plugin" OFF)
 
-  git_submodule_init(qt qtbase/configure)
-
   set(BEXT_QT_JOBS "${pcnt}" CACHE STRING "Parallelism for native and target Qt builds")
   if (NOT BEXT_QT_JOBS MATCHES "^[1-9][0-9]*$")
     message(FATAL_ERROR "BEXT_QT_JOBS must be a positive integer")
-  endif ()
-
-  set(QT_CROSS_ARGS)
-  if (CMAKE_CROSSCOMPILING)
-    set(BEXT_HOST_QT_PATH "" CACHE PATH "Existing native Qt matching bundled Qt (empty builds one)")
-    set(BEXT_QT_HOST_PATH "${BEXT_HOST_QT_PATH}")
-    if (NOT BEXT_QT_HOST_PATH)
-      set(BEXT_QT_HOST_PATH "${BEXT_HOST_INSTALL_PREFIX}/qt")
-      # QtCore, QtDBus and the build tools are needed on the host.  Keep their
-      # shared libraries and CMake packages together in a private prefix.
-      ExternalProject_Add(Qt6_HOST_BLD
-        BEXT_BUILD_ROLE HOST
-        SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/qt/qtbase"
-        BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/qt6-host-build"
-        BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
-        CMAKE_ARGS
-        -DCMAKE_BUILD_TYPE=Release
-        -DCMAKE_INSTALL_PREFIX=${BEXT_QT_HOST_PATH}
-        -DCMAKE_INSTALL_LIBDIR=lib
-        -DBUILD_SHARED_LIBS=ON
-        -DQT_BUILD_EXAMPLES=OFF
-        -DQT_BUILD_TESTS=OFF
-        -DQT_FEATURE_gui=OFF
-        -DQT_FEATURE_widgets=OFF
-        -DQT_FEATURE_opengl=OFF
-        -DQT_FEATURE_printsupport=OFF
-        -DQT_FEATURE_dbus=ON
-        -DQT_FEATURE_dbus_linked=OFF
-        -DQT_FEATURE_network=OFF
-        -DQT_FEATURE_sql=OFF
-        -DQT_FEATURE_testlib=OFF
-        -DQT_FEATURE_concurrent=OFF
-        -DQT_FEATURE_xml=OFF
-        $<$<STREQUAL:${CMAKE_HOST_SYSTEM_NAME},FreeBSD>:-DQT_FEATURE_inotify=OFF>
-        BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel ${BEXT_QT_JOBS}
-        INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --config Release
-        LOG_CONFIGURE ${EXT_BUILD_QUIET}
-        LOG_BUILD ${EXT_BUILD_QUIET}
-        LOG_INSTALL ${EXT_BUILD_QUIET}
-        LOG_OUTPUT_ON_FAILURE ${EXT_BUILD_QUIET}
-        STEP_TARGETS install
-        )
-    elseif (NOT IS_DIRECTORY "${BEXT_QT_HOST_PATH}")
-      message(FATAL_ERROR "BEXT_HOST_QT_PATH is not a native Qt installation: ${BEXT_QT_HOST_PATH}")
-    endif ()
-    list(APPEND QT_CROSS_ARGS "-DQT_HOST_PATH=${BEXT_QT_HOST_PATH}")
   endif ()
 
   set(QT_XMIN_ENABLED OFF)
@@ -200,6 +153,61 @@ if (ENABLE_QT)
   bext_patch_command(QTSVG_PATCH_COMMAND
     "${CMAKE_CURRENT_SOURCE_DIR}/qtsvg.patch")
   string(SHA256 QT_PATCH_SIGNATURE "${qt_patch_hash_input}")
+
+  set(QT_CROSS_ARGS)
+  if (CMAKE_CROSSCOMPILING)
+    set(BEXT_HOST_QT_PATH "" CACHE PATH "Existing native Qt matching bundled Qt (empty builds one)")
+    set(BEXT_QT_HOST_PATH "${BEXT_HOST_QT_PATH}")
+    if (NOT BEXT_QT_HOST_PATH)
+      set(BEXT_QT_HOST_PATH "${BEXT_HOST_INSTALL_PREFIX}/qt")
+      # QtCore, QtDBus and the build tools are needed on the host.  Keep their
+      # shared libraries and CMake packages together in a private prefix.
+      bext_patch_command(QT_HOST_PATCH_COMMAND ${QT_BASE_PATCH_FILES})
+      set(QT_HOST_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/qt6-host-build")
+      file(MAKE_DIRECTORY "${QT_HOST_BUILD_DIR}")
+      file(REAL_PATH "${QT_HOST_BUILD_DIR}" QT_HOST_BUILD_DIR)
+      ExternalProject_Add(Qt6_HOST_BLD
+        BEXT_BUILD_ROLE HOST
+        URL "${QT_UPSTREAM_SOURCE_DIR}"
+        BINARY_DIR "${QT_HOST_BUILD_DIR}"
+        PATCH_COMMAND ${QT_HOST_PATCH_COMMAND}
+        BUILD_ALWAYS ${EXT_BUILD_ALWAYS} ${LOG_OPTS}
+        CMAKE_ARGS
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_INSTALL_PREFIX=${BEXT_QT_HOST_PATH}
+        -DCMAKE_INSTALL_LIBDIR=lib
+        -DBUILD_SHARED_LIBS=ON
+        -DQT_BUILD_EXAMPLES=OFF
+        -DQT_BUILD_TESTS=OFF
+        -DQT_FEATURE_gui=OFF
+        -DQT_FEATURE_widgets=OFF
+        -DQT_FEATURE_opengl=OFF
+        -DQT_FEATURE_printsupport=OFF
+        -DQT_FEATURE_dbus=ON
+        -DQT_FEATURE_dbus_linked=OFF
+        -DQT_FEATURE_network=OFF
+        -DQT_FEATURE_sql=OFF
+        -DQT_FEATURE_testlib=OFF
+        -DQT_FEATURE_concurrent=OFF
+        -DQT_FEATURE_xml=OFF
+        $<$<STREQUAL:${CMAKE_HOST_SYSTEM_NAME},FreeBSD>:-DQT_FEATURE_inotify=OFF>
+        BUILD_COMMAND ${CMAKE_COMMAND} --build <BINARY_DIR> --config Release --parallel ${BEXT_QT_JOBS}
+        INSTALL_COMMAND ${CMAKE_COMMAND} --install <BINARY_DIR> --config Release
+        LOG_CONFIGURE ${EXT_BUILD_QUIET}
+        LOG_BUILD ${EXT_BUILD_QUIET}
+        LOG_INSTALL ${EXT_BUILD_QUIET}
+        LOG_OUTPUT_ON_FAILURE ${EXT_BUILD_QUIET}
+        STEP_TARGETS install
+        )
+      if (TARGET PATCH_BLD-install)
+        ExternalProject_Add_StepDependencies(Qt6_HOST_BLD patch PATCH_BLD-install)
+      endif ()
+    elseif (NOT IS_DIRECTORY "${BEXT_QT_HOST_PATH}")
+      message(FATAL_ERROR "BEXT_HOST_QT_PATH is not a native Qt installation: ${BEXT_QT_HOST_PATH}")
+    endif ()
+    list(APPEND QT_CROSS_ARGS "-DQT_HOST_PATH=${BEXT_QT_HOST_PATH}")
+  endif ()
+
 
   # Make ExternalProject's configure rule sensitive to both the selected
   # profile and this wrapper script.  The script's own signature then clears
