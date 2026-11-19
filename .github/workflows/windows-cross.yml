@@ -47,13 +47,13 @@ jobs:
           fi
           cmake -S . -B build -G Ninja "${args[@]}" \
             -DCMAKE_BUILD_TYPE=Release -DENABLE_ALL=ON \
-            -DUSE_BRLCAD=OFF -DUSE_BRLCAD_EXTRA=OFF -DUSE_GDAL=OFF \
+            -DUSE_BRLCAD=OFF -DUSE_GDAL=OFF \
             -DUSE_QT=OFF -DUSE_TCL=ON -DEXT_BUILD_VERBOSE=ON
 
       - name: Build native generators and Windows packages
         run: |
           cmake --build build --parallel 4 --target tclsh_cpy \
-            ITK_BLD-install TKHTML_BLD-install TKTABLE_BLD-install \
+            ITK_BLD-install TKTABLE_BLD-install \
             IWIDGETS_BLD-install
 
       - name: Compile and link the installed interfaces
@@ -68,7 +68,7 @@ jobs:
           cmake -S CMake/tests/tcl_stack -B consumer -G Ninja "${args[@]}" \
             -DBEXT_TCL_PREFIX="$GITHUB_WORKSPACE/build/install"
           cmake --build consumer --verbose
-          file build/noinstall/host/bin/tclsh8.6 build/noinstall/host/bin/tktable_hdr
+          file build/noinstall/host/bin/tclsh8.6
           file build/install/bin/*.exe build/install/bin/*.dll consumer/*.dll
 
       - name: Build BRL-CAD core dependencies with LLVM-MinGW
@@ -76,7 +76,8 @@ jobs:
         env:
           CMAKE_BUILD_PARALLEL_LEVEL: 4
         run: |
-          cmake -S . -B build -DUSE_BRLCAD=ON -DENABLE_LIEF=OFF -DENABLE_PLIEF=OFF
+          cmake -S . -B build -DUSE_BRLCAD=ON -DENABLE_LIEF=OFF -DENABLE_PLIEF=OFF \
+            -DENABLE_OPENVDB=OFF -DENABLE_OPENCV=OFF -DENABLE_BULLET=OFF
           cmake --build build --parallel 2
           cmake -S CMake/tests/opennurbs_consumer -B consumer-nurbs -G Ninja \
             -DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/CMake/toolchains/windows-llvm-mingw.cmake" \
@@ -89,8 +90,9 @@ jobs:
           CMAKE_BUILD_PARALLEL_LEVEL: 4
         shell: bash
         run: |
-          cmake -S . -B build -DUSE_BRLCAD=ON -DUSE_BRLCAD_EXTRA=ON \
-            -DUSE_GDAL=ON -DENABLE_LIEF=OFF -DENABLE_PLIEF=OFF
+          cmake -S . -B build -DUSE_BRLCAD=ON \
+            -DUSE_GDAL=ON -DENABLE_LIEF=OFF -DENABLE_PLIEF=OFF \
+            -DENABLE_OPENVDB=OFF -DENABLE_OPENCV=OFF -DENABLE_BULLET=OFF
           cmake --build build --parallel 2 --target PROJ_BLD-install \
             STEPCODE_HOST_BLD-install STEPCODE_BLD-install
           test "$(build/noinstall/host/bin/sqlite3 build/install/share/proj/proj.db \
@@ -118,6 +120,7 @@ jobs:
             -P CMake/tests/finalize_install.cmake
           cmake -DBEXT_INSTALL_ROOT="$GITHUB_WORKSPACE/build/install" \
             -DBEXT_MANIFEST="$GITHUB_WORKSPACE/build/bext-install-manifest.json" \
+            -DBEXT_ACTIVE_COMPONENTS="$GITHUB_WORKSPACE/build/CMakeFiles/bext-active-components.txt" \
             -DBEXT_SOURCE_ROOT="$GITHUB_WORKSPACE" \
             -DBEXT_BINARY_ROOT="$GITHUB_WORKSPACE/build" \
             -DBEXT_NOINSTALL_ROOT="$GITHUB_WORKSPACE/build/noinstall" \

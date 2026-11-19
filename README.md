@@ -96,17 +96,16 @@ For preparing, declaring, and adopting a snapshot, see the
 
 # Optional FLTK editor dependencies
 
-FLTK and litehtml currently use local source snapshots rather than submodules.
-Place matching upstream sources in `fltk/fltk` and `litehtml/litehtml`.
-Within `USE_BRLCAD_EXTRA`, each wrapper enables its build when the source is
-present and disables it when absent. `BRLCAD_COMPONENTS` and `DISABLE_FLTK` or
-`DISABLE_LITEHTML` can exclude them. No checkout or download is attempted.
+FLTK uses an optional local source snapshot in `fltk/fltk`. Within
+`USE_BRLCAD`, its wrapper enables the build when that source is present,
+unless `BRLCAD_COMPONENTS`, `DISABLE_FLTK`, or `ENABLE_FLTK=OFF` excludes it.
+No FLTK checkout or download is attempted. litehtml uses upstream's pinned
+submodule and supports both `brlman` and `libfltkcad`.
 
-The wrappers build position-independent archives for `libfltkcad`, install
-CMake packages under `install/`, and copy upstream licenses alongside the other
-dependencies. litehtml's patch preserves installed header layouts and exports.
+The wrappers build position-independent archives, install CMake packages
+under `install/`, and copy their licenses alongside the other dependencies.
 `BEXT_XMIN_ROOT` also selects the matching FLTK Xmin patch and toolkit profile.
-See the wrapper CMake files for the snapshot revisions used by these patches.
+See the FLTK wrapper for the snapshot revision used by its patches.
 
 # Official profiles
 

@@ -83,7 +83,6 @@ selection further.
 | `tiff` | `USE_APPLESEED`, `USE_GDAL` | `install` | `jpeg`, `patch`, `zlib` | [repository](https://github.com/BRL-CAD/libtiff) |
 | `tinygltf` | `USE_BRLCAD` | `install` | `patch` | [repository](https://github.com/BRL-CAD/tinygltf.git) |
 | `tk` | `USE_TCL` | `install` | `patch`, `tcl` | [repository](https://github.com/BRL-CAD/tk) |
-| `tkhtml` | `USE_TCL` | `install` | `patch`, `tcl`, `tk` | [repository](https://github.com/BRL-CAD/tkhtml) |
 | `tktable` | `USE_TCL` | `install` | `patch`, `tcl`, `tk` | [repository](https://github.com/BRL-CAD/tktable) |
 | `xerces-c` | `USE_APPLESEED` | `install` | `icu`, `patch` | [repository](https://github.com/BRL-CAD/xerces-c) |
 | `yaml-cpp` | `USE_APPLESEED` | `install` | `patch` | [repository](https://github.com/BRL-CAD/yaml-cpp) |

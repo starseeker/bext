@@ -433,6 +433,13 @@ toolchain families:
 | `windows-llvm-mingw.cmake` | LLVM-MinGW wrappers, CRT, and C++ runtime |
 | `windows-clang-cl.cmake` | clang-cl, LLD, Windows SDK, and VC runtime |
 
+The Windows GNU portability patches also apply to native MinGW builds
+on Windows. Native Windows Tcl/Tk still needs an adapter for a shell and
+make, such as an MSYS2 implementation, plus validation of the full stack. The
+configure adapters below currently require Unix hosts. For a native MinGW
+build, select the native compilers directly; these cross toolchain profiles
+explicitly set a target system and trigger cross-compilation handling.
+
 Start with the build-context fixture when checking a new installation:
 
 ```sh
@@ -481,6 +488,10 @@ orchestration test without a complete SDK, additionally pass
 `-DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY`.  Do not use that setting to
 claim a working Windows toolchain: it deliberately skips the link check.
 
+Local clang-cl validation covers the object/archive fixture and an independent
+native Tcl bootstrap. Linking with a complete Windows SDK and building the
+full clang-cl target stack remain unvalidated.
+
 ## Native Tcl during cross compilation
 
 Cross builds with Tcl enabled provide `TCL_HOST_BLD-install`, which builds a
@@ -497,8 +508,8 @@ Alternatively, set `BEXT_HOST_TCLSH` to an existing runnable Tcl 8.6 interpreter
 Configuration checks both the interpreter and its script library.  A supplied
 interpreter is currently required when the build host is Windows; the bundled
 native bootstrap uses Unix configure.  `BEXT_HOST_TCL_JOBS` controls bootstrap
-parallelism.  Tkhtml's source generators use this native interpreter while its
-headers and libraries continue to come from the target installation.
+parallelism. Tcl and extension build scripts use the native interpreter,
+while target headers and libraries come from the target installation.
 
 To exercise Tcl generation in the standalone build-context fixture, add
 `-DBEXT_CONTEXT_TCL_SOURCE="$PWD/tcl/tcl"` to its configuration command.  The
@@ -510,8 +521,10 @@ library.  It can also use `BEXT_HOST_TCLSH` to test a supplied interpreter.
 On Unix hosts, MinGW GCC and LLVM-MinGW configurations use Tcl and Tk's
 Windows configure scripts.  The native Tcl interpreter runs stub generation
 and other scripts; target compilation builds Tcl, its bundled extensions
-(including Itcl), Tk, Itk, Tkhtml, and Tktable.  Tktable's C++ header generator
-also builds separately for the host.  Iwidgets installs its script library.
+(including Itcl), Tk, Itk, and Tktable. Tktable 2.12.2 uses its upstream
+configure script and makefiles with the target compiler and native Tcl
+launcher. Iwidgets installs its script library. Tkhtml has been retired
+upstream.
 These builds use bundled target zlib and keep host package paths out of
 target configure and make invocations.
 
@@ -522,10 +535,10 @@ cmake -S . -B build/windows-tcl -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE="$PWD/CMake/toolchains/windows-llvm-mingw.cmake" \
   -DBEXT_TOOLCHAIN_ROOT=/opt/llvm-mingw \
   -DCMAKE_BUILD_TYPE=Release -DENABLE_ALL=ON \
-  -DUSE_BRLCAD=OFF -DUSE_BRLCAD_EXTRA=OFF -DUSE_GDAL=OFF -DUSE_QT=OFF \
+  -DUSE_BRLCAD=OFF -DUSE_GDAL=OFF -DUSE_QT=OFF \
   -DUSE_TCL=ON
 cmake --build build/windows-tcl --parallel 4 --target \
-  tclsh_cpy ITK_BLD-install TKHTML_BLD-install TKTABLE_BLD-install \
+  tclsh_cpy ITK_BLD-install TKTABLE_BLD-install \
   IWIDGETS_BLD-install
 ```
 
@@ -552,8 +565,9 @@ cmake --build build/windows-tcl-consumer
 
 The `Windows cross compilation` workflow exercises MinGW GCC and LLVM-MinGW
 on Linux.  The consumer compiles and links a Windows DLL; it does not load
-that DLL or test graphical packages.  Local validation has built the x86-64
-stack using native FreeBSD LLVM 21 tools with the LLVM-MinGW 20251216 UCRT
+that DLL or test graphical packages. Local validation against upstream
+`c02e91d6` built the x86-64 Tcl/Tk 8.6.18 and Tktable 2.12.2 stack using
+native FreeBSD LLVM 21 tools with the LLVM-MinGW 20251216 UCRT
 headers and libraries, and verified PE executables/DLLs and a separate
 consumer link.  Other architectures and target runtime loading still need
 validation.  Compiler runtime DLLs needed by the selected toolchain must
@@ -564,22 +578,29 @@ The optional `dll_loadcheck` target checks loading DLLs in the installed
 a compatible Windows runner (for example, a configured Wine installation).
 The check fails explicitly if no runner is supplied; compiling its Windows
 test executable alone does not validate DLL loading.  Tcl package loading
-and graphical behavior need additional target runtime tests.
+and graphical behavior need additional target runtime tests. `TKTABLE_check`
+also requires `CMAKE_CROSSCOMPILING_EMULATOR` during a cross build and needs
+a display supported by the target Tk.
 
-The LLVM-MinGW CI job also enables the BRL-CAD core dependency group, with
-LIEF/PLIEF disabled and the optional BRL-CAD, Qt, GDAL, and renderer groups
-still off.  To repeat that broader build after the Tcl-only configuration:
+The LLVM-MinGW CI job also builds a selected BRL-CAD dependency set.
+Upstream merged the former optional group into `USE_BRLCAD`; this validation
+keeps OpenVDB, OpenCV, and Bullet disabled, along with LIEF/PLIEF. Qt, GDAL,
+and renderer groups are initially off. To repeat that broader build after
+the Tcl-only configuration:
 
 ```sh
 cmake -S . -B build/windows-tcl \
-  -DUSE_BRLCAD=ON -DENABLE_LIEF=OFF -DENABLE_PLIEF=OFF
+  -DUSE_BRLCAD=ON -DENABLE_LIEF=OFF -DENABLE_PLIEF=OFF \
+  -DENABLE_OPENVDB=OFF -DENABLE_OPENCV=OFF -DENABLE_BULLET=OFF
 cmake --build build/windows-tcl --parallel 2
 ```
 
-The same local LLVM-MinGW setup has completed this configuration through
-compilation, installation, and bundle manifest generation.  This validates
-the selected dependencies; it does not yet validate a downstream BRL-CAD
-cross build.
+Local validation against upstream `c02e91d6` rebuilt regex, Netpbm, oneTBB,
+OSMesa, OpenNURBS, libpng, litehtml, SQLite, PROJ, and STEPcode with the
+LLVM-MinGW setup above. The installed OpenNURBS and STEPcode consumers link,
+and native SQLite verifies the generated PROJ database. This selected set
+does not validate every BRL-CAD or GDAL dependency, or a complete downstream
+BRL-CAD cross build.
 
 The installed OpenNURBS interface has a separate consumer fixture.  It
 checks integer/UUID layout and links calls to the Windows filesystem,
@@ -614,10 +635,10 @@ The target build still installs its own libraries and executables.  Downstream
 cross builds using `FindSTEPCODE.cmake` should set `STEPCODE_ROOT` to the target
 installation and `STEPCODE_HOST_ROOT` to the native tools prefix.
 
-After the core configuration above, build these selected optional dependencies:
+After the configuration above, build the database and schema dependencies:
 
 ```sh
-cmake -S . -B build/windows-tcl -DUSE_BRLCAD_EXTRA=ON -DUSE_GDAL=ON
+cmake -S . -B build/windows-tcl -DUSE_BRLCAD=ON -DUSE_GDAL=ON
 cmake --build build/windows-tcl --parallel 2 --target PROJ_BLD-install \
   STEPCODE_HOST_BLD-install STEPCODE_BLD-install
 cmake -S CMake/tests/stepcode_consumer -B build/windows-stepcode-consumer -G Ninja \
@@ -633,7 +654,7 @@ code against the installed target libraries.  Local LLVM-MinGW validation has
 built both sets of programs, linked this consumer, and checked the generated
 PROJ database's integrity.  The native STEPcode consumer also passes its
 runtime check.  Both Windows GNU CI configurations exercise these builds.
-This does not validate the rest of the GDAL or optional BRL-CAD groups.
+This does not validate the remaining GDAL or BRL-CAD dependencies.
 
 ## Native Qt tools
 
@@ -641,7 +662,9 @@ Cross builds of bundled Qt first build native Qt Core, D-Bus, and the source
 generators under `noinstall/host/qt`.  `Qt6_HOST_BLD-install` provides this
 bootstrap independently.  The target Qt and Qt SVG builds use it through
 `QT_HOST_PATH`, while all shipped libraries and plugins use the target
-toolchain.  Native Qt headers and libraries remain in the host prefix.
+toolchain. Native Qt headers and libraries remain in the host prefix. Both
+builds receive the bundled Qt base patches, including security and platform
+fixes.
 
 Set `BEXT_HOST_QT_PATH` to reuse an existing native Qt of the same version.
 It must provide the CoreTools, GuiTools, WidgetsTools, and DBusTools CMake
@@ -668,10 +691,10 @@ Its runtime check remains disabled without a cross-compilation runner.
 When relocating the target installation, explicitly supply `QT_HOST_PATH`
 for the matching native installation on the build machine.
 
-Local validation with the FreeBSD/LLVM-MinGW setup above has built Qt and
-Qt SVG and linked the consumer both before and after bundle finalization.
-The finalized target prefix contains Windows PE binaries and no native ELF
-binaries.  The LLVM-MinGW CI job also builds Qt and checks the finalized
+Local validation with the FreeBSD/LLVM-MinGW setup above has built Qt
+6.12.0 and Qt SVG and linked the consumer before and after bundle
+finalization. The finalized target prefix contains Windows PE binaries and
+no native ELF binaries.  The LLVM-MinGW CI job also builds Qt and checks the finalized
 consumer.  Windows runtime behavior and the MinGW GCC Qt build remain
 unvalidated locally.
 
